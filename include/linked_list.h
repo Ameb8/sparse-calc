@@ -18,5 +18,6 @@ void add_node(Node** head, int row, int col, double value);
 void free_list(Node* head);
 void append_node(Node* head, Node* add);
 void print_list(Node* head);
+Node* sort_list(Node* head);
 
 #endif

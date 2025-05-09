@@ -1,5 +1,11 @@
 #include "../include/linked_list.h"
 
+typedef struct {
+    int row;
+    int col;
+    double val;
+} Entry;
+
 // Function to create a new node
 Node* create_node(int row, int col, double value) {
     // Allocate memory for new node
@@ -66,4 +72,56 @@ void print_list(Node* head) {
         temp=temp->next;
     }
     printf("\n");
+}
+
+int compare_entries(const void* a, const void* b) {
+    Entry* ea = (Entry*)a;
+    Entry* eb = (Entry*)b;
+
+    if (ea->row != eb->row)
+        return ea->row - eb->row;
+    return ea->col - eb->col;
+}
+
+Node* sort_list(Node* head) {
+    Node* temp = head;
+    int length = 0;
+
+    while(temp != NULL) {
+        length++;
+        temp = temp->next;
+    }
+
+    // Create an array of Entry structs
+    Entry* entries = malloc(length * sizeof(Entry));
+    if (!entries) { // Allocation failed, exit program
+        fprintf(stderr, "Memory allocation failed.\n");
+        exit(1);
+    }
+
+    temp = head;
+    int i = 0;
+
+    while(temp != NULL) { // Populate entries array
+        entries[i].row = temp->row;
+        entries[i].col = temp->col;
+        entries[i].val = temp->value;
+        i++;
+        temp = temp->next;
+    }
+
+    // Sort entries array
+    qsort(entries, length, sizeof(Entry), compare_entries);
+
+    // Convert back to linked list
+    Node* sorted_head = create_node(entries[0].row, entries[0].col, entries[0].val);
+    temp = sorted_head;
+    for(int i = 1; i < length; i++) {
+        temp->next = create_node(entries[i].row, entries[i].col, entries[i].val);
+        temp = temp->next;
+    }
+
+    free(entries);
+
+    return sorted_head;
 }

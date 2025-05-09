@@ -2,16 +2,14 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 #include "../include/linked_list.h"
 #include "../include/matrix_util.h"
 
-Matrix* get_user_matrix() {
-    return NULL;
-}
 
 
 int get_user_int(const char* name, int max_val) {
-    char buffer[100]; // Enough for most inputs
+    char buffer[100];
     char* endptr;
     long val;
 
@@ -42,29 +40,6 @@ int get_user_int(const char* name, int max_val) {
     }
 }
 
-/*
-// Function to collect int less than max_val from user
-int get_user_int(const char* name, int max_val) {
-    int val;
-    char c;
-
-    while (1) {
-        printf("%s (less than %d, negative to stop): ", name, max_val);
-
-        if (scanf("%d", &val) != 1) {
-            // Clear invalid input
-            while ((c = getchar()) != '\n' && c != EOF);
-            printf("Invalid input. Please enter an integer.\n");
-            continue;
-        }
-
-        if (val < 0 || val < max_val) {
-            return val;
-        }
-
-        printf("%s must be less than %d. Try again.\n", name, max_val);
-    }
-}*/
 
 bool is_duplicate(Node* head, int row, int col) {
     Node* current = head;
@@ -119,12 +94,13 @@ Node* get_nz_vals(int height, int width) {
     }
 
     return head;
-
 }
 
-int main() {
-    Node* vals = get_nz_vals(100, 100);
-    print_list(vals);
-
-    return 0;
+Matrix* get_user_matrix() {
+    int max_val = INT_MAX;
+    int height = get_user_int("Enter matrix height", max_val);
+    int width = get_user_int("Enter matrix width", max_val);
+    Node* vals = get_nz_vals(height, width);
+    
+    return matrix_create(height, width, vals);
 }

@@ -18,7 +18,10 @@ typedef struct {
 
 Matrix* matrix_create(int rows, int cols, Node* entries);
 void matrix_free(Matrix* mat);
-Matrix* multiply(const Matrix* a, Matrix* b);
 void print_matrix(Matrix* matrix);
+bool add_val(Matrix* matrix, int row, int col, double val);
+void build_map(Matrix* matrix);
+Matrix* matrix_from_map(int rows, int cols, HashMap* val_map);
+int compare_coords(int row_a, int col_a, int row_b, int col_b);
 
 #endif
