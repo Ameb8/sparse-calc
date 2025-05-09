@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "../include/matrix_math.h"
 
-Matrix* matrix_add(const Matrix* a, const Matrix* b) {
+Matrix* matrix_add(Matrix* a, Matrix* b) {
     if(a->rows != b->rows || a->cols != b->cols)
         return NULL;
     
@@ -26,8 +26,29 @@ Matrix* matrix_add(const Matrix* a, const Matrix* b) {
 
         last = last->next;
     }
+
+    Matrix* append = NULL;
+    int index = 0;
+
+    // Get matrix with values to add
+    if(a_index < a->nnz) {
+        append = a;
+        index = a_index;
+    } else {
+        append = b;
+        index = b_index;
+    }
+
+    // Add rest of values to list
+    for(int i = index; i < append->nnz; i++) {
+        last->next = create_node(append->row_ind[i], append->col_ind[i], append->values[i]);
+        last = last->next;
+    }
     
-    return matrix_create(a->rows, a->cols, result_vals);
+    Matrix* result = matrix_create(a->rows, a->cols, result_vals->next);
+    free_list(result_vals);
+
+    return result;
 }
 
 Matrix* matrix_scalar(const Matrix* matrix, double scalar) {

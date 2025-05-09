@@ -1,6 +1,7 @@
 #ifndef MATRIX_UTIL_H
 #define MATRIX_UTIL_H
 
+#include <stdbool.h>
 #include "hash_table.h"
 
 // Matrix struct in COO format

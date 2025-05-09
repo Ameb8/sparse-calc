@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include "../include/matrix_util.h"
 #include "../include/hash_table.h"
 #include "../include/linked_list.h"
@@ -15,7 +14,7 @@ int compare_coords(int row_a, int col_a, int row_b, int col_b) {
         return -1;
     if(col_a > col_b)
         return 1;
-    return 0
+    return 0;
 }
 
 // Function to create a Matrix from the linked list
@@ -204,5 +203,8 @@ bool add_val(Matrix* matrix, int row, int col, double val) {
     return true;
 }
 
+//Matrix* matrix_copy(Matrix* matrix) {
+
+//}
 
 

@@ -1,7 +1,8 @@
-#include <stdio.h>
+/*#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include "../include/matrix_util.h"
 #include "../include/matrix_cli.h"
 
@@ -24,10 +25,9 @@ void list_matrices() {
 }
 
 Matrix* find_matrix_by_name(const char* name) {
-    for (int i = 0; i < matrix_count; i++) {
-        if (strcmp(matrix_list[i]->name, name) == 0) {
+    for(int i = 0; i < matrix_count; i++) {
+        if(strcmp(matrix_list[i]->name, name) == 0)
             return matrix_list[i]->mat;
-        }
     }
 
     return NULL;
@@ -112,4 +112,4 @@ int main() {
     run_program();
 
     return 0;
-}
+}*/
