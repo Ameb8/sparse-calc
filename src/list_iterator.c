@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "list_iterator.h"
-#include "list.h"
+#include "../include/list_iterator.h"
+#include "../include/list.h"
 
 ListIterator list_iter_create(List* list) {
     ListIterator iter;

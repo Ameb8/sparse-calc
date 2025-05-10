@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "hash_map.h"
-#include "map_iterator.h"
+#include "../include/hash_map.h"
+#include "../include/map_iterator.h"
 
 int main() {
     // Create a new hashmap

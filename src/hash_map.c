@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "list.h"
-#include "hash_map.h"
+#include "../include/list.h"
+#include "../include/hash_map.h"
 
 // Function to create a new hashmap
 HashMap* map_create() {
@@ -34,10 +34,7 @@ unsigned int hash(int row, int col) {
 void map_set(HashMap* map, int row, int col, double val) {
     unsigned int index = hash(row, col); // Get hash of (row, col)
 
-    if(val == 0)
-        return;
-
-    if(map->table[index] == NULL) { // Add used bucket to list if necessary
+    if(map->table[index] == NULL && val != 0) { // Add used bucket to list if necessary
         list_prepend(map->used_buckets, index, 0, 0);
         map->table[index] = list_create();
     }
@@ -50,7 +47,12 @@ void map_set(HashMap* map, int row, int col, double val) {
         map->size++;
     } else {
         list_remove_val(list, row, col);
-        list_prepend(list, row, col, val);
+        if(val != 0) {
+            list_prepend(list, row, col, val);
+        } else {
+            map->size--;
+            if(map->table[index]->head == NULL) free(list);
+        }
     }
 }
 
@@ -87,27 +89,6 @@ double map_get(HashMap* map, int row, int col) {
 
     return list_get_val(map->table[index], row, col);
 }
-
-/*
-double** map_to_arr(HashMap* map) {
-    if(map->size == 0)
-        return NULL;
-
-    double** map_vals = malloc(map->size * sizeof(double*));
-    double* map_vals_data = malloc(3 * map->size * sizeof(double));
-
-    for(int i = 0; i <map->size; i++)
-        map_vals[i] = map_vals_data + i * 3;
-
-    Node* temp = map->used_buckets->head;
-    int i = 0;
-
-    while(temp != NULL && i < map->size) {
-        map_vals[]
-    }
-
-
-}*/
 
 
 void free_hash_map(HashMap* map) {

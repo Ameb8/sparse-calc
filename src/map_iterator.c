@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "map_iterator.h"
+#include "../include/map_iterator.h"
 
 MapIterator map_iterator_create(HashMap* map) {
     MapIterator it;

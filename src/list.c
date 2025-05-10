@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <float.h>
-#include "list.h"
+#include "../include/list.h"
 
 
 // Function to create a new node
@@ -149,12 +149,11 @@ void list_free(List* list) {
 
     // Iterate through the list and free each node
     while (current != NULL) {
-        next = current->next; // Save the next node
-        free(current); // Free the current node
-        current = next; // Move to the next node
+        next = current->next;
+        free(current); 
+        current = next;
     }
 
-    // Finally, free the list structure itself
     free(list);
 }
 

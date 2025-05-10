@@ -18,6 +18,10 @@
         "functional": "c",
         "type_traits": "c",
         "utility": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "map_iterator.h": "c",
+        "matrix.h": "c",
+        "hash_map.h": "c",
+        "list.h": "c"
     }
 }

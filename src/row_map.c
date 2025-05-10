@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "row_map.h"
-#include "list.h"
+#include "../include/row_map.h"
+#include "../include/list.h"
 
 // Hash function to map row indices to bucket indices
 unsigned int row_map_hash(int row) {
