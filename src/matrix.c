@@ -66,7 +66,7 @@ void matrix_decrement(Matrix* dest, Matrix* source) {
     }
 }
 
-Matrix* subtract(Matrix* a, Matrix* b) {
+Matrix* matrix_sub(Matrix* a, Matrix* b) {
     if(a->rows != b->rows || a->cols != b->cols)
         return NULL;
 
