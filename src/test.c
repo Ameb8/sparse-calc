@@ -5,10 +5,13 @@
 #include <assert.h>
 #include <math.h>
 #include <float.h>
+#include <string.h>
 #include "../include/list.h"
 #include "../include/hash_map.h"
 #include "../include/test.h"
 #include "../include/matrix.h"
+#include "../include/parse_input.h"
+#include "../include/eval_expr.h"
 
 int total_tests = 0;
 int failed_tests = 0;
@@ -29,6 +32,19 @@ int failed_tests = 0;
             #actual, #expected, (actual), (expected), __FILE__, __LINE__); \
     } \
 } while (0)
+
+#define ASSERT_STR_EQ(actual, expected) do { \
+    total_tests++; \
+    if ((actual) == NULL || (expected) == NULL || strcmp((actual), (expected)) != 0) { \
+        failed_tests++; \
+        printf("FAILED in %s: %s != %s (%s != %s) at %s:%d\n", \
+            __func__, #actual, #expected, \
+            (actual) ? (actual) : "NULL", \
+            (expected) ? (expected) : "NULL", \
+            __FILE__, __LINE__); \
+    } \
+} while (0)
+
 
 
 void test_list_remove_val() {
@@ -200,6 +216,73 @@ void test_matrix_subtract() {
     matrix_free(result);
 }
 
+void test_tokenizer() {
+    int token_count = 0;
+    char* input = "A * 2.5 + B - (3.1)";
+    Token* tokens = parse_expr(input, &token_count);
+
+    // Expected tokens
+    TokenType expected_types[] = {
+        TOKEN_MATRIX, TOKEN_BIN_OP, TOKEN_NUMERIC,
+        TOKEN_BIN_OP, TOKEN_MATRIX, TOKEN_BIN_OP,
+        TOKEN_LPAREN, TOKEN_NUMERIC, TOKEN_RPAREN
+    };
+    const double expected_vals[] = {
+        -1.0, 1.0, 2.5, 0.0, -1.0, 0.0, 3.0, 3.1, 3.0
+    };
+    const char* expected_symbols[] = {
+        "A", "*", "2.5", "+", "B", "-", "(", "3.1", ")"
+    };
+
+    int expected_count = sizeof(expected_types) / sizeof(TokenType);
+
+    ASSERT_INT_EQ(token_count, expected_count); // Check token count
+
+    for (int i = 0; i < expected_count; i++) {
+        ASSERT_INT_EQ(tokens[i].type, expected_types[i]); // Check token types
+        ASSERT_STR_EQ(tokens[i].symbol, expected_symbols[i]); // Check token symbol
+
+        if(expected_vals[i] != -1) // Check token values
+            ASSERT_DOUBLE_EQ(tokens[i].val, expected_vals[i], 1e-6);
+        
+    }
+
+    // Free tokens
+    for (int i = 0; i < token_count; i++) 
+        free(tokens[i].symbol);
+    
+    free(tokens);
+}
+
+void test_convert_rpn() {
+  // Expression: operand 3 + (4 * 2) - 5'
+    // Assumed postfix: 3 4 2 * + 5 ' -
+    Token tokens[] = {
+        {TOKEN_NUMERIC, "3", 0.0},
+        {TOKEN_BIN_OP, "+", 1.0},
+        {TOKEN_LPAREN, "(", 0.0},
+        {TOKEN_NUMERIC, "4", 0.0},
+        {TOKEN_BIN_OP, "*", 2.0},
+        {TOKEN_NUMERIC, "2", 0.0},
+        {TOKEN_RPAREN, ")", 0.0},
+        {TOKEN_BIN_OP, "-", 1.0},
+        {TOKEN_NUMERIC, "5", 0.0},
+        {TOKEN_UN_OP, "'", 0.0}  
+    };
+    int num_tokens = sizeof(tokens) / sizeof(Token);
+    int rpn_len = 0;
+    Token* rpn = convert_rpn(tokens, num_tokens, &rpn_len);
+
+    const char* expected[] = {"3", "4", "2", "*", "+", "5", "'", "-"};
+    int expected_len = sizeof(expected) / sizeof(char*);
+
+    ASSERT_INT_EQ(rpn_len, expected_len);
+
+    for (int i = 0; i < expected_len; i++) 
+        ASSERT_STR_EQ(rpn[i].symbol, expected[i]);
+
+    free(rpn);
+}
 
 void run_tests() {
     test_list_remove_val();
@@ -209,6 +292,8 @@ void run_tests() {
     test_matrix_add();
     test_matrix_scalar_mult();
     test_matrix_subtract();
+    test_tokenizer();
+    test_convert_rpn();
     printf("\n%d out of %d tests passed\n", total_tests - failed_tests, total_tests);
 }
 

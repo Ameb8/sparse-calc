@@ -22,6 +22,9 @@
         "map_iterator.h": "c",
         "matrix.h": "c",
         "hash_map.h": "c",
-        "list.h": "c"
+        "list.h": "c",
+        "cstdlib": "c",
+        "complex": "c",
+        "stdlib.h": "c"
     }
 }

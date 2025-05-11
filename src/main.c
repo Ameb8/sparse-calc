@@ -5,20 +5,11 @@
 #include "../include/map_iterator.h"
 #include "../include/matrix.h"
 #include "../include/test.h"
+#include "../include/matrix_cli.h"
 
 void run_app() {
-    printf("Production version running\n\n\n");
-    
-    Matrix* a = matrix_create(10, 10); 
-
-    for(int i = 0; i < 10; i++) {
-        matrix_set(a, i, 9 - i,  ++i);
-        matrix_print(a);
-    }
-
-    matrix_print(a);
-    matrix_set(a, 3, 7, 0);
-    printf("0 added\n");
+    printf("run_app() called\n");
+    Matrix* a = get_user_matrix();
 
 }
 
