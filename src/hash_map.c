@@ -43,8 +43,10 @@ void map_set(HashMap* map, int row, int col, double val) {
     double cur_val = list_get_val(map->table[index], row, col);
 
     if(cur_val == 0) {
-        list_prepend(list, row, col, val);
-        map->size++;
+        if(val != 0) {
+            list_prepend(list, row, col, val);
+            map->size++;
+        }
     } else {
         list_remove_val(list, row, col);
         if(val != 0) {
@@ -86,6 +88,9 @@ void map_insert(HashMap* map, int row, int col, double val) {
 
 double map_get(HashMap* map, int row, int col) {
     unsigned int index = hash(row, col);
+
+    if (map->table[index] == NULL)
+        return 0;
 
     return list_get_val(map->table[index], row, col);
 }

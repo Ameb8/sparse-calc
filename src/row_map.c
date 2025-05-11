@@ -163,39 +163,3 @@ void free_row_map(RowMap* map) {
     }
     free(map);  // Free the RowMap structure
 }
-
-int main() {
-    RowMap* map = row_map_create();
-
-    // Insert some values
-    row_map_increment(map, 5, 1, 3.5);
-    row_map_increment(map, 5, 2, 4.2);
-    row_map_insert(map, 105, 2, 1.1);
-    row_map_increment(map, 5, 3, 4.2);
-
-    printf("\nRow 10:\n");
-    //list_print(row_map_get_row(map, 105));
-
-    printf("\nRow 5:\n");
-    list_print(row_map_get_row(map, 5));
-    
-
-    // Get and print values
-    printf("Value at (5, 1): %.2f\n", row_map_get(map, 5, 1));  // Should print 3.5
-    printf("Value at (5, 2): %.2f\n", row_map_get(map, 5, 2));  // Should print 4.2
-    printf("Value at (5, 3): %.2f\n", row_map_get(map, 5, 3));  // Should print 4.2
-    printf("Value at (105, 2): %.2f\n", row_map_get(map, 105, 2));  // Should print 4.2
-
-    // Increment a value
-    row_map_increment(map, 0, 1, 2.5);
-    printf("New Value at (0, 1): %.2f\n", row_map_get(map, 0, 1));  // Should print 6.0
-
-    // Remove a value
-    row_map_remove(map, 0, 2);
-    printf("Value at (0, 2) after removal: %.2f\n", row_map_get(map, 0, 2));  // Should print 0.0
-
-    // Free memory
-    free_row_map(map);
-
-    return 0;
-}

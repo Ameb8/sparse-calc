@@ -1,34 +1,33 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "../include/hash_map.h"
 #include "../include/map_iterator.h"
+#include "../include/matrix.h"
+#include "../include/test.h"
 
-int main() {
-    // Create a new hashmap
-    HashMap* map = map_create();
+void run_app() {
+    printf("Production version running\n\n\n");
+    
+    Matrix* a = matrix_create(10, 10); 
 
-    // Insert some values
-    map_insert(map, 1, 2, 3.5);
-    map_insert(map, 2, 3, 7.0);
-    map_insert(map, 1, 2, 1.5); // This will accumulate the value
-    map_insert(map, 2, 3, -7.0);
-
-    // Retrieve and print values
-    printf("Value at (1, 2): %f\n", map_get(map, 1, 2)); // Should be 5.0 (3.5 + 1.5)
-    printf("Value at (2, 3): %f\n", map_get(map, 2, 3)); // Should be 7.0
-    printf("Size: %d\n", map->size);
-
-    MapIterator map_it = map_iterator_create(map);
-
-    while(map_iterator_has_next(&map_it)) {
-        int row, col;
-        double val;
-
-        map_iterator_next(&map_it, &row, &col, &val);
-        printf("matrix[%d][%d] = %.2f\n", row, col, val);
+    for(int i = 0; i < 10; i++) {
+        matrix_set(a, i, 9 - i,  ++i);
+        matrix_print(a);
     }
 
-    // Free the hashmap
-    free_hash_map(map);
+    matrix_print(a);
+    matrix_set(a, 3, 7, 0);
+    printf("0 added\n");
 
+}
+
+
+int main() {
+#ifdef TEST
+    run_tests();
+#else
+    run_app();
+#endif
     return 0;
 }

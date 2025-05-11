@@ -12,29 +12,19 @@ typedef struct {
 } Matrix;
 
 
-Matrix* matrix_create(int rows, int cols) {
-    // Allocate memory for a new Matrix
-    Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
-    if (matrix == NULL) {
-        // Handle memory allocation failure
-        fprintf(stderr, "Memory allocation failed for the HashMap.\n");
-        exit(1);
-    }
-
-    // Instantiate fields
-    matrix->rows = rows;
-    matrix->cols = cols;
-    matrix->vals = map_create();
-    matrix->mult_vals = NULL;
-}
-
+Matrix* matrix_create(int rows, int cols);
 int matrix_size(Matrix* matrix);
 Matrix* matrix_add(Matrix* a, Matrix* b);
+Matrix* subtract(Matrix* a, Matrix* b);
 Matrix* matrix_scalar_mult(Matrix* matrix, double scalar);
 Matrix* matrix_scalar_add(Matrix* matrix, double scalar);
 Matrix* transpose(Matrix* matrix);
 Matrix* matrix_mult(Matrix* a, Matrix* b);
-void matrix_set(Matrix* matrix, int row, int col, int val);
+void matrix_set(Matrix* matrix, int row, int col, double val);
+void matrix_print(Matrix* matrix);
+Matrix* matrix_copy(Matrix* matrix);
+void matrix_free(Matrix* matrix);
+
 
 
 #endif
