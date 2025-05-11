@@ -167,7 +167,7 @@ Operand handle_numeric(char* op, Operand a, Operand b) {
     if(!strcmp(op, "^"))
         return operand_create(NULL, pow(a.val, b.val));
 
-    return Operand_error();
+    return operand_error();
 }
 
 Operand apply_bin_op(char* op, Operand a, Operand b) {
@@ -183,7 +183,23 @@ Operand apply_bin_op(char* op, Operand a, Operand b) {
 }
 
 Operand apply_un_op(char* op, Operand a) {
-
+    if(!strcmp(op, "-")) { // Handle unary negative
+        if(a.matrix == NULL) {
+            return operand_create(NULL, a.val * -1);
+        } else {
+            Matrix* result = matrix_scalar_mult(a.matrix, -1);
+            return operand_create(result, 0);
+        }
+    } else if(!strcmp(op, "'")) { // Handle Transpose
+        if(a.matrix == NULL) {
+            return operand_create(NULL, a.val);
+        } else {
+            Matrix* result = matrix_transpose(a.matrix);
+            return operand_create(result, 0);
+        }
+    } else {
+        return operand_error();
+    }
 }
 
 Matrix* eval_expr(Token* expr, int len) {
@@ -197,33 +213,48 @@ Matrix* eval_expr(Token* expr, int len) {
         } else if(expr[i].type == TOKEN_NUMERIC) { // Add number to stack
             stack[++i] = operand_create(NULL, expr[i].val);
         } else {
-                if(expr[i].type == TOKEN_UN_OP) { // Apply unary operator
-                    if(top < 0) { // Missing operand
-                        printf("Expression error, not enough operands\n");
-                        return NULL;
-                    }
-
-                    Operand op = stack[top--]; // Get operand
-                    Operand result = apply_un_op(expr[i].symbol, op);
-                    if(result.err) return NULL; // Error occurred while applying operator
-                    stack[++top] = result; // Push result
-                } else if(expr[i].type == TOKEN_BIN_OP) { // Apply binary operator
-                    if(top < 0) { // Missing operand
-                        printf("Expression error, not enough operands\n");
-                        return NULL;^
-                    }
-
-                    // Get operands
-                    Operand a = stack[top--];
-                    Operand b = stack[top--];
-
-                    Operand result = apply_bin_op(expr[i].symbol, a, b); // Get result
-                    if(result.err) return NULL; // Error occurred while applying operator
-                    stack[++top] = result; // Push result
-                } else { // Error, parentheses in RPN expression
-                    printf("Expression error, mismatched parentheses\n");
+            if(expr[i].type == TOKEN_UN_OP) { // Apply unary operator
+                if(top < 0) { // Missing operand
+                    printf("Expression error, not enough operands\n");
                     return NULL;
                 }
+
+                Operand op = stack[top--]; // Get operand
+                Operand result = apply_un_op(expr[i].symbol, op);
+                if(result.err) return NULL; // Error occurred while applying operator
+                stack[++top] = result; // Push result
+            } else if(expr[i].type == TOKEN_BIN_OP) { // Apply binary operator
+                if(top < 0) { // Missing operand
+                    printf("Expression error, not enough operands\n");
+                    return NULL;
+                }
+
+                // Get operands
+                Operand a = stack[top--];
+                Operand b = stack[top--];
+
+                Operand result = apply_bin_op(expr[i].symbol, a, b); // Get result
+                if(result.err) return NULL; // Error occurred while applying operator
+                stack[++top] = result; // Push result
+            } else { // Error, parentheses in RPN expression
+                printf("Expression error, mismatched parentheses\n");
+                return NULL;
+            }
         }
     }
+
+    if(top != 0) {
+        printf("Expression error, not enough operators\n");
+        return NULL;
+    }
+
+    Operand result = stack[top];
+    
+    if(result.matrix == NULL) {
+        Matrix* res_matrix = create_matrix(1, 1);
+        matrix_set(res_matrix, 0, 0, result.val);
+        return matrix_set;
+    }
+
+    return result.matrix;
 }
