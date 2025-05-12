@@ -6,6 +6,7 @@
 #include <math.h>
 #include <float.h>
 #include <string.h>
+#include <stdbool.h>
 #include "../include/list.h"
 #include "../include/hash_map.h"
 #include "../include/test.h"
@@ -204,7 +205,7 @@ void test_matrix_subtract() {
     matrix_set(B, 0, 0, 2.0);
     matrix_set(B, 1, 0, 4.0);
 
-    Matrix* result = subtract(A, B);
+    Matrix* result = matrix_sub(A, B);
 
     ASSERT_DOUBLE_EQ(map_get(result->vals, 0, 0), 3.0, 1e-6); // 5 - 2
     ASSERT_DOUBLE_EQ(map_get(result->vals, 1, 1), 3.0, 1e-6); // 3 - 0
@@ -218,7 +219,12 @@ void test_matrix_subtract() {
 
 void test_tokenizer() {
     int token_count = 0;
-    char* input = "A * 2.5 + B - (3.1)";
+
+    Matrix* a = matrix_create(2, 2);
+    matrix_set(a, 0, 0, 3.1);
+    set_user_matrix("A", a);
+
+    char* input = "A * 2.5 + B - (A[0][0])";
     Token* tokens = parse_expr(input, &token_count);
 
     // Expected tokens
@@ -284,6 +290,23 @@ void test_convert_rpn() {
     free(rpn);
 }
 
+void test_replace_all() {
+    //Matrix* a = matrix_create(3, 3);
+    //matrix_set(a, 0, 0, 1);
+    //set_user_matrix("A", a);
+
+    // DEBUG ***
+    printf("Matrix created: \n");
+    //matrix_print(a);
+    // END DEBUG ***
+
+    char* result = replace_all("A[0][0] and A[1][1]");
+    ASSERT_STR_EQ(result, "3.1 and 0");
+    //delete_matrix("A");
+    free(result);
+    //matrix_free(a);
+}
+
 void run_tests() {
     test_list_remove_val();
     test_map_get_empty();
@@ -294,6 +317,7 @@ void run_tests() {
     test_matrix_subtract();
     test_tokenizer();
     test_convert_rpn();
+    test_replace_all();
     printf("\n%d out of %d tests passed\n", total_tests - failed_tests, total_tests);
 }
 

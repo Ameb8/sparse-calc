@@ -3,6 +3,6 @@
 
 #include "matrix.h"
 
-Matrix* get_user_matrix();
+Matrix* get_matrix_user();
 
 #endif

@@ -8,8 +8,8 @@
 #include "../include/matrix_cli.h"
 
 void run_app() {
-    printf("run_app() called\n");
-    Matrix* a = get_user_matrix();
+    //printf("run_app() called\n");
+    //Matrix* a = get_user_matrix();
 
 }
 

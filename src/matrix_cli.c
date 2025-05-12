@@ -45,7 +45,7 @@ int get_user_int(const char *prompt, int lower, int upper) {
     }
 }
 
-Matrix* get_user_matrix(char* matrix_name) {
+Matrix* get_matrix_user(char* matrix_name) {
     printf("\nPlease enter the dimensions of matrix %s\n", matrix_name);
     int rows = get_user_int("Height:\t" , 1, INT_MAX);
     int cols = get_user_int("Width:\t", 1, INT_MAX);

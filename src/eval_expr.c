@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include <math.h>
 #include "../include/matrix.h"
-#include "../include/parse_input.h"
 #include "../include/eval_expr.h"
+
 
 typedef struct {
     double val;
@@ -147,8 +147,8 @@ Operand handle_sub(Operand a, Operand b) {
         result = matrix_sub(a.matrix, b.matrix);
     else if(a.matrix != NULL) // Scalar subtraction
         result = matrix_scalar_add(a.matrix, b.val * -1);
-    else if(b.matrix != NULL) // Scalar subtraction
-        result = matrix_scalar_subr(b.matrix, a.val * -1);
+    //else if(b.matrix != NULL) // Scalar subtraction
+        //result = matrix_scalar_subr(b.matrix, a.val * -1);
     else // Numeric subtraction
         return operand_create(NULL, a.val - b.val);
 
@@ -251,9 +251,9 @@ Matrix* eval_expr(Token* expr, int len) {
     Operand result = stack[top];
     
     if(result.matrix == NULL) {
-        Matrix* res_matrix = create_matrix(1, 1);
+        Matrix* res_matrix = matrix_create(1, 1);
         matrix_set(res_matrix, 0, 0, result.val);
-        return matrix_set;
+        return res_matrix;
     }
 
     return result.matrix;

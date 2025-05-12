@@ -106,7 +106,7 @@ Matrix* matrix_scalar_add(Matrix* matrix, double scalar) {
     return result;
 }
 
-Matrix* transpose(Matrix* matrix) {
+Matrix* matrix_transpose(Matrix* matrix) {
     Matrix* result = matrix_create(matrix->cols, matrix->rows);
     MapIterator map_iter= map_iterator_create(result->vals);
 
@@ -171,6 +171,10 @@ Matrix* matrix_mult(Matrix* a, Matrix* b) {
 void matrix_set(Matrix* matrix, int row, int col, double val) {
     if(matrix->mult_vals != NULL) matrix->mult_vals = NULL;
     map_set(matrix->vals, row, col, val);
+}
+
+double matrix_get(Matrix* matrix, int row, int col) {
+    return map_get(matrix->vals, row, col);
 }
 
 void matrix_print(Matrix* matrix) {
