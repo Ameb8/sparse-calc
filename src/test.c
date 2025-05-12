@@ -14,6 +14,11 @@
 #include "../include/parse_input.h"
 #include "../include/eval_expr.h"
 #include "../include/runtime_data.h"
+#include "../include/map_iterator.h"
+#include "../include/parse_expr.h"
+
+#define EPSILON 1e-9
+
 
 int total_tests = 0;
 int failed_tests = 0;
@@ -30,8 +35,8 @@ int failed_tests = 0;
     total_tests++; \
     if (fabs((actual) - (expected)) > (epsilon)) { \
         failed_tests++; \
-        printf("FAILED: %s == %s (%.6f != %.6f) at %s:%d\n", \
-            #actual, #expected, (actual), (expected), __FILE__, __LINE__); \
+        printf("FAILED in %s: %s == %s (%.6f != %.6f) at %s:%d\n", \
+            __func__, #actual, #expected, (actual), (expected), __FILE__, __LINE__); \
     } \
 } while (0)
 
@@ -47,6 +52,54 @@ int failed_tests = 0;
     } \
 } while (0)
 
+#define ASSERT_MATRIX_EQ(expected, actual) \
+    matrix_assert_eq((expected), (actual), __FILE__, __LINE__, __func__)
+
+
+void matrix_assert_eq(Matrix* expected, Matrix* actual,
+        const char* file, int line, const char* func) {
+
+    // Compare number of non-zero elements
+    if(matrix_size(expected) != matrix_size(actual)) {
+        printf("FAILED in %s: matrix elements mismatch (expected %d got %d) at %s:%d\n",
+            func, matrix_size(expected), matrix_size(actual), file, line);
+        failed_tests++;
+        total_tests++;
+     
+        return;
+    }
+    
+    // Compare matrix size
+    if(expected->rows != actual->rows || expected->cols != actual->cols) {
+        printf("FAILED in %s: matrix dimension mismatch (expected %dx%d, got %dx%d) at %s:%d\n",
+            func, expected->rows, expected->cols,
+            actual->rows, actual->cols, file, line);
+        failed_tests++;
+        total_tests++;
+     
+        return;
+    }
+    
+    MapIterator exp_vals = map_iterator_create(expected->vals);
+
+    // Compare element values and location
+    while(map_iterator_has_next(&exp_vals)) {
+        // Get expected  and actual value at location
+        int row, col;
+        double exp_val;
+        map_iterator_next(&exp_vals, &row, &col, &exp_val);
+        double actual_val = matrix_get(actual, row, col);
+
+        // Compare expected and actual values
+        if(fabs(exp_val - actual_val) > EPSILON) {
+            printf("FAILED in %s: mismatched value at [%d][%d] (expected %.6f, got %.6f) at %s:%d\n",
+                func, row, col, exp_val, actual_val, file, line);
+            failed_tests++;
+            total_tests++;
+            return;
+        }
+    }
+}
 
 
 void test_list_remove_val() {
@@ -221,11 +274,7 @@ void test_matrix_subtract() {
 void test_tokenizer() {
     int token_count = 0;
 
-    Matrix* a = matrix_create(2, 2);
-    matrix_set(a, 0, 0, 3.1);
-    rd_save_matrix("A", a);
-
-    char* input = "A * 2.5 + B - (A[0][0])";
+    char* input = "A * 2.5 + B - (A[4][3])";
     Token* tokens = parse_expr(input, &token_count);
 
     // Expected tokens
@@ -235,10 +284,10 @@ void test_tokenizer() {
         TOKEN_LPAREN, TOKEN_NUMERIC, TOKEN_RPAREN
     };
     const double expected_vals[] = {
-        -1.0, 1.0, 2.5, 0.0, -1.0, 0.0, 3.0, 3.1, 3.0
+        -1.0, 1.0, 2.5, 0.0, -1.0, 0.0, 3.0, 11.0, 3.0
     };
     const char* expected_symbols[] = {
-        "A", "*", "2.5", "+", "B", "-", "(", "3.1", ")"
+        "A", "*", "2.5", "+", "B", "-", "(", "11", ")"
     };
 
     int expected_count = sizeof(expected_types) / sizeof(TokenType);
@@ -292,20 +341,46 @@ void test_convert_rpn() {
 }
 
 void test_replace_all() {
-    //Matrix* a = matrix_create(3, 3);
-    //matrix_set(a, 0, 0, 1);
-    //set_user_matrix("A", a);
+    char* result = replace_all("A[1][1] and A[4][4]");
+    ASSERT_STR_EQ(result, "4 and 0");
 
-    // DEBUG ***
-    printf("Matrix created: \n");
-    //matrix_print(a);
-    // END DEBUG ***
-
-    char* result = replace_all("A[0][0] and A[1][1]");
-    ASSERT_STR_EQ(result, "3.1 and 0");
-    //delete_matrix("A");
     free(result);
-    //matrix_free(a);
+}
+
+void test_eval_expr_case(char* expr, Matrix* exp_result) {
+    Matrix* result = solve_expr(expr);
+    ASSERT_MATRIX_EQ(exp_result, result);
+}
+
+void test_eval_expr() {
+    char* expr_1 = "A + B * 3";
+    Matrix* res_1 = matrix_create(5, 5);
+    matrix_set(res_1, 0, 1, 42);
+    matrix_set(res_1, 0, 2, 7);
+    matrix_set(res_1, 1, 1, 4);
+    matrix_set(res_1, 1, 4, 60);
+    matrix_set(res_1, 2, 0, 1);
+    matrix_set(res_1, 2, 2, 54);
+    matrix_set(res_1, 3, 0, 6);
+    matrix_set(res_1, 3, 4, 14);
+    matrix_set(res_1, 4, 3, 35);
+
+    test_eval_expr_case(expr_1, res_1);
+
+}
+
+void init_user_matrices() {
+    // Create matrices
+    Matrix* a = matrix_create(5, 5);
+    Matrix* b = matrix_create(5, 5);
+
+    for(int i = 0; i < 5; i++) { // Populate matrices with values
+        matrix_set(a, (i + 1045) * 3 % 5, (i + 31) * 42 % 5, (i + 1) * 24 % 17);
+        matrix_set(b, (i + 124) * 4 % 5, (i + 17) * 17 % 5, (i + 4) * 38 % 22);
+    }
+
+    rd_save_matrix("A", a);
+    rd_save_matrix("B", b);
 }
 
 void run_tests() {
@@ -316,9 +391,11 @@ void run_tests() {
     test_matrix_add();
     test_matrix_scalar_mult();
     test_matrix_subtract();
+    init_user_matrices();
     test_tokenizer();
     test_convert_rpn();
     test_replace_all();
+    test_eval_expr();
     printf("\n%d out of %d tests passed\n", total_tests - failed_tests, total_tests);
 }
 

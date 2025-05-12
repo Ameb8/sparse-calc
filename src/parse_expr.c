@@ -3,10 +3,10 @@
 #include <float.h>
 #include <string.h>
 #include <ctype.h>
-#include "../include/matrix.h"
 #include "../include/token.h"
 #include "../include/eval_expr.h"
 #include "../include/runtime_data.h"
+#include "../include/parse_expr.h"
 
 
 // Gets matrix name, row, and col from matrix indexing
@@ -31,18 +31,6 @@ char* get_val(char* input) {
 
     get_matrix_index(input, &name, &row, &col);
 
-    #ifdef DEBUG
-    printf("Matrix vals:\n%s[%d][%d]\n", name, row, col);
-    printf("name pointer: %p, name string: %s\n", (void*)name, name);
-    printf("User matrices:\t(%d)\n", num_matrices);
-
-    for(int i = 0; i < num_matrices; i++) {
-        printf("\nMatrix name:\t%s\n", matrix_names[i]);
-        printf("Matrix:\n");
-        matrix_print(matrices[i]);
-    }
-    #endif
-
     Matrix* matrix = rd_get_matrix(name);
 
     if(matrix == NULL)
@@ -52,11 +40,6 @@ char* get_val(char* input) {
 
     if(val == -DBL_MAX)
         return NULL;
-
-    #ifdef DEBUG
-    printf("User matrix:\n");
-    matrix_print(matrix);
-    #endif
 
     char* result = malloc(32);
     sprintf(result, "%g", val);
@@ -252,6 +235,12 @@ Matrix* solve_expr(char* expr) {
     expr = replace_all(expr);
     int num_tokens;
     Token* token_expr = parse_expr(expr, &num_tokens);
+
+    #ifdef DEBUG
+        printf("\n In-order token list:\n");
+        for(int i = 0; i < num_tokens; i++) 
+            printf("Token type: %d\tToken value: %s\n", token_expr[i].type, token_expr[i].symbol);
+    #endif
 
     if(token_expr == NULL)
         return NULL;

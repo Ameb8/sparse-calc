@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
-#include "../include/matrix.h"
 #include "../include/eval_expr.h"
+#include "../include/runtime_data.h"
 
 
 typedef struct {
@@ -18,6 +18,17 @@ Operand operand_create(Matrix* matrix, double val) {
     op.matrix = matrix;
     op.val = val;
     op.err = false;
+
+    #ifdef DEBUG
+    if(matrix != NULL) {
+        printf("\nOperand matrix field:\n");
+        matrix_print(op.matrix);
+        printf("Matrix argument:\n");
+        matrix_print(matrix);
+    }
+
+    #endif
+
     return op;
 }
 
@@ -208,6 +219,12 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
     int len;
     Token* expr = convert_rpn(infix_expr, infix_len, &len);
 
+    #ifdef DEBUG
+    printf("\nRPN expression:\n");
+    for(int i = 0; i <len; i++) 
+    printf("Token type: %d\tToken value: %s\n", expr[i].type, expr[i].symbol);
+    #endif
+
     if(expr == NULL)
         return NULL;
     
@@ -215,11 +232,25 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
     int top = -1;
 
     for(int i = 0; i < len; i++) { // Iterate through tokens
+
+        #ifdef DEBUG
+        printf("\nCurrent token (iteration %d): %d\t%s\n", i, expr[i].type, expr[i].symbol);
+        printf("Operand stack:\n");
+        for(int j = top; j >= 0; j--) {
+            if(stack[j].matrix != NULL)
+                matrix_print(stack[j].matrix);
+            else
+                printf("\nVal:\t%.2f\n", stack[i].val);
+
+        }
+        #endif
+
         if(expr[i].type == TOKEN_MATRIX) { // Add matrix to stack
-            Matrix* matrix = get_matrix(expr[i].symbol);
-            stack[++i] = operand_create(matrix, 0);
+            //Matrix* matrix = get_matrix(expr[i].symbol);
+            Matrix* matrix = rd_get_matrix(expr[i].symbol);
+            stack[++top] = operand_create(matrix, 0);
         } else if(expr[i].type == TOKEN_NUMERIC) { // Add number to stack
-            stack[++i] = operand_create(NULL, expr[i].val);
+            stack[++top] = operand_create(NULL, expr[i].val);
         } else {
             if(expr[i].type == TOKEN_UN_OP) { // Apply unary operator
                 if(top < 0) { // Missing operand
