@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 #include "../include/matrix.h"
 #include "../include/map_iterator.h"
 
@@ -174,6 +175,9 @@ void matrix_set(Matrix* matrix, int row, int col, double val) {
 }
 
 double matrix_get(Matrix* matrix, int row, int col) {
+    if(row < 0 || row > matrix->rows || col < 0 || col > matrix->cols)
+        return -DBL_MAX;
+
     return map_get(matrix->vals, row, col);
 }
 
@@ -201,6 +205,7 @@ void matrix_print(Matrix* matrix) {
 Matrix* matrix_copy(Matrix* matrix) {
     Matrix* copy = matrix_create(matrix->rows, matrix->cols);
     matrix_append(copy, matrix);
+
     return copy;
 }
 

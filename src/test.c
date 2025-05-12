@@ -13,6 +13,7 @@
 #include "../include/matrix.h"
 #include "../include/parse_input.h"
 #include "../include/eval_expr.h"
+#include "../include/runtime_data.h"
 
 int total_tests = 0;
 int failed_tests = 0;
@@ -222,7 +223,7 @@ void test_tokenizer() {
 
     Matrix* a = matrix_create(2, 2);
     matrix_set(a, 0, 0, 3.1);
-    set_user_matrix("A", a);
+    rd_save_matrix("A", a);
 
     char* input = "A * 2.5 + B - (A[0][0])";
     Token* tokens = parse_expr(input, &token_count);

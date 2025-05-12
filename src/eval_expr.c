@@ -84,6 +84,7 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
                     op_top--; // discard LPAREN
                 } else {
                     fprintf(stderr, "Mismatched parentheses\n");
+                    return NULL;
                 }
                 break;
 
@@ -95,6 +96,7 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
     while (op_top >= 0) {
         if (op_stack[op_top]->type == TOKEN_LPAREN || op_stack[op_top]->type == TOKEN_RPAREN) {
             fprintf(stderr, "Mismatched parentheses\n");
+            return NULL;
         }
         output[output_pos++] = *op_stack[op_top--];
     }
@@ -202,7 +204,13 @@ Operand apply_un_op(char* op, Operand a) {
     }
 }
 
-Matrix* eval_expr(Token* expr, int len) {
+Matrix* eval_expr(Token* infix_expr, int infix_len) {
+    int len;
+    Token* expr = convert_rpn(infix_expr, infix_len, &len);
+
+    if(expr == NULL)
+        return NULL;
+    
     Operand stack[32];
     int top = -1;
 
