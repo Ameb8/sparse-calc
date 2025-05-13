@@ -196,7 +196,21 @@ Operand apply_bin_op(char* op, Operand a, Operand b) {
 }
 
 Operand apply_un_op(char* op, Operand a) {
+    #ifdef DEBUG
+    printf("\napply_un_op() params:\n");
+    printf("op: %s\n", op);
+    if(a.matrix == NULL)
+        printf("values: %.2f\n", a.val);
+    else
+        matrix_print(a.matrix);
+    #endif
+
     if(!strcmp(op, "-")) { // Handle unary negative
+
+        #ifdef DEBUG
+        printf("\n Unary minus operator selected\n");
+        #endif
+
         if(a.matrix == NULL) {
             return operand_create(NULL, a.val * -1);
         } else {
@@ -204,13 +218,35 @@ Operand apply_un_op(char* op, Operand a) {
             return operand_create(result, 0);
         }
     } else if(!strcmp(op, "'")) { // Handle Transpose
+
+        #ifdef DEBUG
+        printf("\n Transpose operator selected\n");
+        #endif
+
         if(a.matrix == NULL) {
             return operand_create(NULL, a.val);
         } else {
+
+            #ifdef DEBUG
+            printf("\n Transpose Initiated\n");
+            #endif
+
+            // ERROR HERE !!! ********************************************
             Matrix* result = matrix_transpose(a.matrix);
+
+            #ifdef DEBUG
+            printf("\nTranspose result:\n");
+            matrix_print(result);
+            #endif
+
             return operand_create(result, 0);
         }
     } else {
+
+        #ifdef DEBUG
+        printf("\n Unary operator not recognized\n");
+        #endif
+
         return operand_error();
     }
 }

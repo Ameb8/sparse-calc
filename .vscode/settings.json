@@ -28,6 +28,8 @@
         "stdlib.h": "c",
         "__locale": "c",
         "runtime_data.h": "c",
-        "random": "c"
+        "random": "c",
+        "__tree": "c",
+        "map": "c"
     }
 }

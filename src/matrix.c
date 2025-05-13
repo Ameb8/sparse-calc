@@ -107,15 +107,29 @@ Matrix* matrix_scalar_add(Matrix* matrix, double scalar) {
     return result;
 }
 
+
 Matrix* matrix_transpose(Matrix* matrix) {
     Matrix* result = matrix_create(matrix->cols, matrix->rows);
-    MapIterator map_iter= map_iterator_create(result->vals);
+    MapIterator map_iter= map_iterator_create(matrix->vals);
 
-    while(map_iterator_has_next) {
+    #ifdef DEBUG
+    matrix_print(matrix);
+    #endif
+
+    while(map_iterator_has_next(&map_iter)) {
         int row, col;
         double val;
         map_iterator_next(&map_iter, &row, &col, &val);
-        matrix_inc_val(result, col, row, val);
+        
+        #ifdef DEBUG
+        printf("\nresult[%d][%d] = %.2f\n", row, col, val);
+        #endif
+
+        matrix_set(result, col, row, val);
+
+        #ifdef DEBUG
+        matrix_print(result);
+        #endif
     }
 
     return result;

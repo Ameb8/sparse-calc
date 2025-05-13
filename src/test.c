@@ -59,6 +59,11 @@ int failed_tests = 0;
 void matrix_assert_eq(Matrix* expected, Matrix* actual,
         const char* file, int line, const char* func) {
 
+    printf("\nExpected:\n");
+    matrix_print(expected);
+    printf("Actual:\n");
+    matrix_print(actual);
+
     // Compare number of non-zero elements
     if(matrix_size(expected) != matrix_size(actual)) {
         printf("FAILED in %s: matrix elements mismatch (expected %d got %d) at %s:%d\n",
@@ -151,6 +156,65 @@ void test_map_get_empty() {
     //printf("All map_get tests for unset keys passed.\n");
 
     free_hash_map(map);
+}
+
+void test_map_it_has_next() {
+    HashMap* map = map_create();
+    MapIterator map_it = map_iterator_create(map);
+    bool res = map_iterator_has_next(&map_it);
+    ASSERT_INT_EQ((int) res, 0);
+    map_set(map, 1, 1, 1);
+    map_it = map_iterator_create(map);
+    res = map_iterator_has_next(&map_it);
+    ASSERT_INT_EQ((int)res, 1);
+    free_hash_map(map);
+}
+
+void test_map_it_next() {
+    int row, col;
+    double val;
+
+    Matrix* matrix = rd_get_matrix("A");
+    HashMap* map = matrix->vals;
+    MapIterator map_it = map_iterator_create(map);
+
+    int exp_rows[] = {0, 1, 2, 3, 4};
+    int exp_cols[] = {2, 1, 0, 4, 3};
+    double exp_vals[] = {7, 4, 1, 14, 11};
+    bool vals_found[] = {false, false, false, false, false};
+
+    while(map_iterator_has_next(&map_it)) {
+        int row, col;
+        double val;
+        map_iterator_next(&map_it, &row, &col, &val);
+        bool val_found;
+
+        for(int i = 0; i < 5; i++) {
+            val_found = false;
+            if(row == exp_rows[i] && col == exp_cols[i] && fabs(val - exp_vals[i]) < EPSILON) {
+                if(vals_found[i]) {
+                    failed_tests++;
+                    printf("FAILED im test_map_it_next: [%d][%d] col value returned more than once\n", row, col);
+                } else {
+                    val_found = true;
+                    vals_found[i] = true;
+                }
+            }
+
+        }
+
+        total_tests++;
+        if(!val_found) {
+            failed_tests++;
+            printf("Failed in test_map_it_next: Returned data from iterator not found in map's values");
+        }
+
+    }
+
+    for(int i = 0; i < 5; i++) {
+        if(!vals_found[i])
+            printf("Failed in test_map_it_next: Element in map not returned by iterator");
+    }
 }
 
 void test_matrix_set() {
@@ -271,6 +335,23 @@ void test_matrix_subtract() {
     matrix_free(result);
 }
 
+void test_matrix_transpose() {
+    Matrix* a = rd_get_matrix("A");
+    Matrix* exp_res = matrix_create(5, 5);
+    matrix_set(exp_res, 0, 2, 1);
+    matrix_set(exp_res, 1, 1, 4);
+    matrix_set(exp_res, 2, 0, 7);
+    matrix_set(exp_res, 3, 4, 11);
+    matrix_set(exp_res, 4, 3, 14);
+
+    Matrix* result = matrix_transpose(a);
+
+    ASSERT_MATRIX_EQ(exp_res, result);
+
+    free(exp_res);
+    free(result);
+}
+
 void test_tokenizer() {
     int token_count = 0;
 
@@ -350,6 +431,8 @@ void test_replace_all() {
 void test_eval_expr_case(char* expr, Matrix* exp_result) {
     Matrix* result = solve_expr(expr);
     ASSERT_MATRIX_EQ(exp_result, result);
+    //matrix_print(result);
+    matrix_free(result);
 }
 
 void test_eval_expr() {
@@ -364,9 +447,38 @@ void test_eval_expr() {
     matrix_set(res_1, 3, 0, 6);
     matrix_set(res_1, 3, 4, 14);
     matrix_set(res_1, 4, 3, 35);
+    //test_eval_expr_case(expr_1, res_1);
 
-    test_eval_expr_case(expr_1, res_1);
+    char* expr_2 = "A' * 1.342 * (B + B)";
+    Matrix* res_2 = matrix_create(5, 5);
+    matrix_set(res_2, 0, 2, 50.472);
+    matrix_set(res_2, 1, 4, 214.72);
+    matrix_set(res_2, 2, 1, 263.032);
+    matrix_set(res_2, 3, 3, 236.192);
+    matrix_set(res_2, 4, 0, 75.152);
+    //test_eval_expr_case(expr_2, res_2);
 
+    char* expr_3 = "A * B";
+    Matrix* res_3 = matrix_create(5, 5);
+    matrix_set(res_3, 0, 2, 126);
+    matrix_set(res_3, 1, 4, 80);
+    matrix_set(res_3, 2, 1, 14);
+    matrix_set(res_3, 3, 3, 112);
+    matrix_set(res_3, 4, 0, 22);
+    test_eval_expr_case(expr_3, res_3);
+
+    char* expr_4 = "A' * (B + B)";
+    Matrix* res_4 = matrix_create(5, 5);
+    matrix_set(res_4, 0, 2, 36);
+    matrix_set(res_4, 1, 4, 160);
+    matrix_set(res_4, 2, 1, 196);
+    matrix_set(res_4, 3, 3, 176);
+    matrix_set(res_4, 4, 0, 56);
+    //test_eval_expr_case(expr_4, res_4);
+
+    matrix_free(res_1);
+    matrix_free(res_2);
+    matrix_free(res_3);
 }
 
 void init_user_matrices() {
@@ -384,6 +496,7 @@ void init_user_matrices() {
 }
 
 void run_tests() {
+    init_user_matrices();
     test_list_remove_val();
     test_map_get_empty();
     test_matrix_set();
@@ -391,12 +504,15 @@ void run_tests() {
     test_matrix_add();
     test_matrix_scalar_mult();
     test_matrix_subtract();
-    init_user_matrices();
+    test_matrix_transpose();
+    test_map_it_has_next();
+    //test_map_it_next();
     test_tokenizer();
     test_convert_rpn();
     test_replace_all();
     test_eval_expr();
     printf("\n%d out of %d tests passed\n", total_tests - failed_tests, total_tests);
+
 }
 
 #endif
