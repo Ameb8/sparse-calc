@@ -80,15 +80,20 @@ int parse_pattern(const char* str, int start, int* end) {
     return 1;
 }
 
+
+// Replace indexed matrices with numeric value
 char* replace_all(const char* input_str) {
     int len = strlen(input_str);
-    char* output = malloc(len * 2);  // allocate more than enough
+    char* output = malloc(len * 2); 
     output[0] = '\0';
 
     int i = 0;
-    while (i < len) {
-        int end;
-        if (parse_pattern(input_str, i, &end)) {
+    while (i < len) { // Iterate through tokens
+        int end; // Holds end index of indexed matrices if valid
+
+        // Check if indexed matrix
+        if(parse_pattern(input_str, i, &end)) {
+            // Copy index matrix
             int match_len = end - i;
             char* match = malloc(match_len + 1);
             strncpy(match, &input_str[i], match_len);
@@ -98,8 +103,8 @@ char* replace_all(const char* input_str) {
             printf("Pattern matched: '%s'\n", match);
             #endif
 
-            char* replacement = get_val(match);
-            if(replacement == NULL) {
+            char* replacement = get_val(match); // Get numeric value
+            if(replacement == NULL) { // Index out of bounds
                 printf("Expression error: index at %s is out of matrix bounds\n", input_str);
                 return NULL;
             }
@@ -109,13 +114,13 @@ char* replace_all(const char* input_str) {
             printf("Replacing '%s' with '%s'\n", match, replacement);
             #endif
 
-            strcat(output, replacement);
+            strcat(output, replacement); // Replace in string
 
             free(match);
             free(replacement);
 
             i = end;
-        } else {
+        } else { // Not indexed matrix
             int len_out = strlen(output);
             output[len_out] = input_str[i];
             output[len_out + 1] = '\0';
@@ -126,23 +131,24 @@ char* replace_all(const char* input_str) {
     return output;
 }
 
+// Parse string expression into tokens
 Token* parse_expr(char* expr, int* token_count) {
     int capacity = 16;
     Token* tokens = malloc(sizeof(Token) * capacity);
     *token_count = 0;
 
-    expr = replace_all(expr);
+    expr = replace_all(expr); // Replace indexed matrices with values
 
     int i = 0;
-    while (expr[i] != '\0') {
+    while (expr[i] != '\0') { // Iterate through each char in string expression
         char c = expr[i];
 
-        if (isspace(c)) {
+        if(isspace(c)) { // Skip spaces
             i++;
             continue;
         }
 
-        if (*token_count >= capacity) {
+        if(*token_count >= capacity) { // Increase capicity if necessary
             capacity *= 2;
             tokens = realloc(tokens, sizeof(Token) * capacity);
         }
@@ -151,73 +157,76 @@ Token* parse_expr(char* expr, int* token_count) {
         token.symbol = NULL;
         token.val = 0;
 
-        switch(c) {
-            case '+':
+        switch(c) { // Evaluate char to token
+            case '+': // Addition token
                 token.type = TOKEN_BIN_OP;
                 token.symbol = strdup("+");
                 token.val = 0;
                 i++;
                 break;
-            case '-':
+            case '-': // Subtraction token
                 token.type = TOKEN_BIN_OP;
                 token.symbol = strdup("-");
                 token.val = 0;
                 i++;
                 break;
-            case '*':
+            case '*': // Multiplication token
                 token.type = TOKEN_BIN_OP;
                 token.symbol = strdup("*");
                 token.val = 1;
                 i++;
                 break;
-            case '\'':
+            case '\'': // Division token
                 token.type = TOKEN_UN_OP;
                 token.symbol = strdup("'");
                 token.val = 2;
                 i++;
                 break;
-            case '(':
+            case '(': // Opening parentheses
                 token.type = TOKEN_LPAREN;
                 token.symbol = strdup("(");
                 token.val = 3;
                 i++;
                 break;
-            case ')':
+            case ')': // Closing parentheses
                 token.type = TOKEN_RPAREN;
                 token.symbol = strdup(")");
                 token.val = 3;
                 i++;
                 break;
 
-            default:
-                if (isalpha(c) || c == '_') {
+            default: // Token is not operator
+                if (isalpha(c) || c == '_') { // Matrix name
                     int start = i;
                     while (isalpha(expr[i]) || expr[i] == '_') i++;
                     int length = i - start;
                     token.type = TOKEN_MATRIX;
                     token.symbol = strndup(expr + start, length);
                     token.val = 3; // unused
-                } else if (isdigit(c) || (c == '.' && isdigit(expr[i + 1]))) {
+                } else if (isdigit(c) || (c == '.' && isdigit(expr[i + 1]))) { // Numeric value
                     int start = i;
                     int has_dot = 0;
 
+                    // Decimal found
                     while (isdigit(expr[i]) || (!has_dot && expr[i] == '.')) {
                         if (expr[i] == '.') has_dot = 1;
                         i++;
                     }
 
+                    // Copy whole number into num_str
                     int length = i - start;
                     char* num_str = strndup(expr + start, length);
-                    if(has_dot < 2) {
+                    
+                    if(has_dot < 2) { // Too many decimal places, invalid
                         token.type = TOKEN_NUMERIC;
                         token.symbol = num_str;
                         token.val = strtod(num_str, NULL); 
-                    } else {
+                    } else { // Unrecognized token
                         return NULL;
                         //token.type = TOKEN_INVALID;
                         //token.symbol = num_str;
                     }
-                } else {
+                } else { // Unrecognized token
                     //token.type = TOKEN_INVALID;
                     //token.symbol = strndup(&c, 1);
                     //i++;

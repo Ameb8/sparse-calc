@@ -118,12 +118,12 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
 }
 
 Matrix* get_matrix(char* name) {
-    return NULL;
+    return NULL; 
 }
 
 Operand handle_mult(Operand a, Operand b) {
     if(a.matrix != NULL && b.matrix != NULL) { // Matrix multiplication
-        Matrix* result = matrix_mult(a.matrix, b.matrix);
+        Matrix* result = matrix_mult(b.matrix, a.matrix);
         return operand_create(result, 0);
     } else if(a.matrix != NULL) { // Scalar multiplication
         Matrix* result = matrix_scalar_mult(a.matrix, b.val);

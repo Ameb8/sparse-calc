@@ -4,7 +4,7 @@
 #include "../include/hash_map.h"
 #include "../include/map_iterator.h"
 #include "../include/matrix.h"
-#include "../include/test.h"
+#include "../test/test.h"
 #include "../include/matrix_cli.h"
 
 void run_app() {

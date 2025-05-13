@@ -4,8 +4,6 @@
 #include "hash_map.h"
 #include "token.h"
 
-Token* parse_expr(char* expr, int* token_count);
-
 // Allows test.c to access methods for unit testing
 #ifdef TEST 
 #include "matrix.h"

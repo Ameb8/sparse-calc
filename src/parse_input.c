@@ -6,6 +6,7 @@
 #include "../include/parse_input.h"
 #include "../include/matrix.h"
 #include "../include/eval_expr.h"
+#include "../include/parse_expr.h"
 
 typedef bool (*CommandFn)(char* input);
 #define NUM_COMMANDS 4
