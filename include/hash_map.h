@@ -16,7 +16,7 @@ void map_insert(HashMap* map, int row, int col, double val);
 void map_set(HashMap* map, int row, int col, double val);
 double map_get(HashMap* map, int row, int col);
 void free_hash_map(HashMap* map);
-
-
+bool map_save(HashMap* map, const char* filename);
+HashMap* map_load(const char* filename);
 
 #endif

@@ -11,7 +11,7 @@
 #include "../include/runtime_data.h"
 
 typedef bool (*CommandFn)(char* input);
-#define NUM_COMMANDS 4
+#define NUM_COMMANDS 5
 #define MAX_MATRICES 50
 
 typedef struct {
@@ -23,12 +23,14 @@ bool list_matrices(char* input);
 bool show_matrix(char* input);
 bool help(char* input);
 bool set_matrix(char* input);
+bool clear_terminal(char* input);
 
 Command commands[] = {
     {"matrix", set_matrix},
     {"list", list_matrices},
     {"show", show_matrix},
     {"help", help},
+    {"clear", clear_terminal}
 };
 
 char** split_input(const char* input, int* count) {
@@ -42,8 +44,8 @@ bool create_matrix(char* name) {
         return false;
     }
 
-    int res = rd_save_matrix(name, new);
-    if(res > 0) {
+    bool res = rd_save_matrix(name, new);
+    if(!res) {
         printf("Error: Matrix with name %s already exists\n", name);
         return false;
     }
@@ -108,6 +110,13 @@ bool list_matrices(char* input) {
     return true;
 }
 
+bool clear_terminal(char* input) {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
 
 bool starts_with(const char* input, const char* command) {
     // Check if str2 is longer than str1
@@ -183,17 +192,11 @@ bool save_result(Matrix* result, char* target) {
     matrix == rd_get_matrix(target);
     bool res_flag = true;
 
-    matrix_print(result);
-    matrix_print(matrix);
-
     if(!matrix) {
-        //printf("Target: %s\n", target);
         res_flag = rd_overwrite_matrix(target, result);
     } else {
-        //printf("TTarget: %s\n", target);
         res_flag = rd_overwrite_matrix(target, result);
-        //if(res_flag)
-            //printf("Matrix %s overwritten\n", target);
+
     }
 
     return res_flag;
@@ -210,6 +213,16 @@ bool handle_input(char* input) {
         printf("Error: Invalid expression\n");
         return false;
     }
+    expr[0] = trim(expr[0]);
+
+    #ifdef DEBUG
+    printf("expr[0]: %s\n", expr[0]);
+    
+    printf("ASCII dump of expr[0]:\n");
+    for(int i = 0; expr[0][i] != '\0'; i++) {
+        printf("  expr[0][%d] = '%c' (ASCII %d)\n", i, expr[0][i], (unsigned char)expr[0][i]);
+    }
+    #endif
 
     int end, row, col;
     char* name;
@@ -217,13 +230,21 @@ bool handle_input(char* input) {
 
     // Check if matrix index is being assigned
     if(parse_pattern(expr[0], 0, &end) && expr[0][end] == '\0') {
+        #ifdef DEBUG
+        printf("parse_pattern success. end = %d, expr[end] = '%c'\n", end, expr[0][end]);
+        #endif
+
         get_matrix_index(expr[0], &name, &row, &col);
-        name = trim(name);
+        
+        #ifdef DEBUG
+        printf("%s[%d][%d] = ?\n", name, row, col);
+        #endif
 
         if(name != NULL) 
             matrix = rd_get_matrix(name);
 
     }
+
 
     Matrix* result = solve_expr(expr[1]);
 
@@ -258,7 +279,7 @@ bool handle_input(char* input) {
         #ifdef DEBUG
         printf("Matrix Invalid (handle_input())\n");
         #endif
-        
+
         return save_result(result, expr[0]);
     }
 }

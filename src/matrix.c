@@ -5,6 +5,8 @@
 #include "../include/matrix.h"
 #include "../include/map_iterator.h"
 
+#define MATRIX_REGISTRY "matrix_registry.dat"
+
 Matrix* matrix_create(int rows, int cols) {
     // Allocate memory for a new Matrix
     Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
@@ -258,4 +260,94 @@ void matrix_free(Matrix* matrix) {
         free_row_map(matrix->mult_vals);
 
     free(matrix);
+}
+
+
+Matrix* matrix_save(Matrix* matrix, const char* name) {
+    // Check if matrix name already exists
+    FILE* registry = fopen(MATRIX_REGISTRY, "rb");
+    if (registry) {
+        char existing_name[100];
+        while (fread(existing_name, sizeof(char), 100, registry) == 100) {
+            int dummy1, dummy2;
+            fread(&dummy1, sizeof(int), 1, registry);
+            fread(&dummy2, sizeof(int), 1, registry);
+            if (strcmp(existing_name, name) == 0) {
+                fclose(registry);
+                return NULL;  // Name already exists
+            }
+        }
+        fclose(registry);
+    }
+
+    // Save matrix metadata to registry
+    registry = fopen(MATRIX_REGISTRY, "ab");
+    if (!registry) return NULL;
+
+    char name_buf[100] = {0};
+    strncpy(name_buf, name, 99);
+    fwrite(name_buf, sizeof(char), 100, registry);
+    fwrite(&matrix->rows, sizeof(int), 1, registry);
+    fwrite(&matrix->cols, sizeof(int), 1, registry);
+    fclose(registry);
+
+    // Save HashMap vals to separate file
+    char vals_filename[128];
+    snprintf(vals_filename, sizeof(vals_filename), "matrix_%s.vals", name);
+
+    if (!map_save(matrix->vals, vals_filename)) {
+        return NULL;
+    }
+
+    // Do not save mult_vals
+    return matrix;
+}
+
+
+Matrix* matrix_load(const char* name) {
+    FILE* registry = fopen(MATRIX_REGISTRY, "rb");
+    if (!registry) return NULL;  // Registry does not exist
+
+    char existing_name[100];
+    int rows = 0, cols = 0;
+    bool found = false;
+
+    // Search for the matrix metadata by name
+    while (fread(existing_name, sizeof(char), 100, registry) == 100) {
+        fread(&rows, sizeof(int), 1, registry);
+        fread(&cols, sizeof(int), 1, registry);
+
+        if (strcmp(existing_name, name) == 0) {
+            found = true;
+            break;
+        }
+    }
+
+    fclose(registry);
+
+    if (!found) return NULL;  // Name not found
+
+    // Create matrix with rows and cols from registry
+    Matrix* matrix = matrix_create(rows, cols);
+    if (!matrix) return NULL;
+
+    // Load hashmap vals from separate file
+    char vals_filename[128];
+    snprintf(vals_filename, sizeof(vals_filename), "matrix_%s.vals", name);
+
+    HashMap* loaded_vals = map_load(vals_filename);
+    if (!loaded_vals) {
+        matrix_free(matrix);
+        return NULL;
+    }
+
+    // Assign loaded HashMap to matrix->vals
+    // Free the old empty vals hashmap created by matrix_create
+    free_hash_map(matrix->vals);
+    matrix->vals = loaded_vals;
+
+    // mult_vals is not saved or loaded, set to NULL or create if needed
+    matrix->mult_vals = NULL;
+
+    return matrix;
 }

@@ -1,6 +1,8 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include <stdbool.h>
+
 //typedef struct Node Node;
 
 typedef struct Node {
@@ -24,5 +26,7 @@ double list_update_val(List* list, int row, int col, double val);
 double list_remove_val(List* list, int row, int col);
 void list_free(List* list);
 void list_print(List* list);
+bool list_save(List* list, const char* filename);
+List* list_load(const char* filename);
 
 #endif

@@ -27,6 +27,8 @@ void matrix_print(Matrix* matrix);
 Matrix* matrix_copy(Matrix* matrix);
 void matrix_free(Matrix* matrix);
 Matrix* scalar_subr(Matrix* matrix, double val);
+Matrix* matrix_save(Matrix* matrix, const char* name);
+Matrix* matrix_load(const char* name);
 
 
 

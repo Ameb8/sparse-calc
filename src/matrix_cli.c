@@ -56,14 +56,9 @@ Matrix* get_matrix_user(char* matrix_name) {
 
 // Helper to trim leading and trailing whitespace from a word
 char* trim(const char* str) {
-    if(!str) {
-        printf("Input is NULL!\n");
+    if(!str)
         return NULL;
-    } else {
-        printf("Input: %s\n", str);
-    }
-    if(!strcmp(str, ""))
-        printf("trim() input empty\n");
+
 
     while (isspace((unsigned char)*str)) str++;
     if (*str == 0) 

@@ -8,6 +8,7 @@
 #include "../include/matrix_cli.h"
 #include "../include/parse_input.h"
 
+
 #define MAX_INPUT_LENGTH 256
 
 void run_app() {

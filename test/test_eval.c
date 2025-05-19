@@ -108,7 +108,6 @@ void test_eval_expr_invalid() {
     test_eval_expr_case(expr_5, NULL);
     char* expr_6 = "$";
     test_eval_expr_case(expr_6, NULL);
-
 }
 
 void test_eval_expr() {
@@ -156,6 +155,9 @@ void test_eval_expr() {
     Matrix* res_5 = matrix_create(1, 1);
     matrix_set(res_5, 0, 0, 80);
     test_eval_expr_case(expr_5, res_5);
+
+    //char* expr_6 = "A - 5";
+    //Matrix* res_6 = matrix_create(5, 5);
 
     matrix_free(res_1);
     matrix_free(res_2);

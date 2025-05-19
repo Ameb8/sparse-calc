@@ -1,6 +1,7 @@
 #ifdef TEST
 
 #include <stdlib.h>
+#include <string.h>
 #include "../include/runtime_data.h"
 #include "test_util.h"
 
@@ -155,6 +156,44 @@ void test_matrix_transpose() {
     free(result);
 }
 
+void test_matrix_save_load() {
+    Matrix* matrix = rd_get_matrix("A");
+
+    const char* test_name = "test_matrix";
+
+    printf("Saving matrix with name '%s'...\n", test_name);
+    Matrix* saved = matrix_save(matrix, test_name);
+    if (!saved) {
+        printf("Failed to save matrix. Name may already exist or error occurred.\n");
+        return;
+    }
+    printf("Matrix saved successfully.\n");
+
+    printf("Loading matrix with name '%s'...\n", test_name);
+    Matrix* loaded = matrix_load(test_name);
+    if (!loaded) {
+        printf("Failed to load matrix with name '%s'.\n", test_name);
+        return;
+    }
+    printf("Matrix loaded successfully.\n");
+
+    // Basic sanity checks:
+    if (loaded->rows == matrix->rows && loaded->cols == matrix->cols) {
+        printf("Loaded matrix dimensions match saved matrix.\n");
+    } else {
+        printf("Dimension mismatch: saved(%d,%d) loaded(%d,%d)\n",
+            matrix->rows, matrix->cols, loaded->rows, loaded->cols);
+    }
+
+    printf("Saved matrix values:\n");
+    matrix_print(matrix);
+    printf("Loaded matrix values:\n");
+    matrix_print(loaded);
+
+    // Cleanup
+    matrix_free(loaded);
+}
+
 void test_matrix() {
     test_matrix_set();
     test_matrix_mult();
@@ -162,6 +201,7 @@ void test_matrix() {
     test_matrix_scalar_mult();
     test_matrix_subtract();
     test_matrix_transpose();
+    test_matrix_save_load();
     end_test("Matrices");
 }
 

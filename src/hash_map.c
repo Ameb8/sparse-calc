@@ -105,3 +105,73 @@ void free_hash_map(HashMap* map) {
 }
 
 
+bool map_save(HashMap* map, const char* filename) {
+    FILE* file = fopen(filename, "wb");
+    if (!file) {
+        perror("Failed to open file for writing");
+        return false;
+    }
+
+    // Write size of the hashmap
+    fwrite(&map->size, sizeof(int), 1, file);
+
+    // Save the used_buckets list
+    if (!list_save(map->used_buckets, filename)) {
+        fclose(file);
+        return false;
+    }
+
+    // For each used bucket index, save its list
+    Node* current = map->used_buckets->head;
+    while (current) {
+        int index = current->row;
+        char buffer[256];
+        snprintf(buffer, sizeof(buffer), "%s.bucket%d", filename, index); // e.g., "data.bin.bucket42"
+        if (!list_save(map->table[index], buffer)) {
+            fclose(file);
+            return false;
+        }
+        current = current->next;
+    }
+
+    fclose(file);
+    return true;
+}
+
+
+HashMap* map_load(const char* filename) {
+    FILE* file = fopen(filename, "rb");
+    if (!file) {
+        perror("Failed to open file for reading");
+        return NULL;
+    }
+
+    HashMap* map = map_create();
+    fread(&map->size, sizeof(int), 1, file);
+    fclose(file);  // We only needed to read map->size, and the rest is in the lists
+
+    // Load used_buckets
+    map->used_buckets = list_load(filename);
+    if (!map->used_buckets) {
+        free_hash_map(map);
+        return NULL;
+    }
+
+    // For each used bucket, load the corresponding list file
+    Node* current = map->used_buckets->head;
+    while (current) {
+        int index = current->row;
+        char buffer[256];
+        snprintf(buffer, sizeof(buffer), "%s.bucket%d", filename, index);
+
+        map->table[index] = list_load(buffer);
+        if (!map->table[index]) {
+            free_hash_map(map);
+            return NULL;
+        }
+
+        current = current->next;
+    }
+
+    return map;
+}

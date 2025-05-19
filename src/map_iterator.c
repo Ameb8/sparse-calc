@@ -30,31 +30,7 @@ bool map_iterator_has_next(MapIterator* it) {
 
     return false;
 }
-/*
-void map_iterator_next(MapIterator* it, int* row, int* col, double* val) {
 
-
-    if (!list_iter_has_next(&it->current_bucket_it)) {
-        // Advance if current bucket is exhausted
-        while (list_iter_has_next(&it->list_it)) {
-            int index, unused_col;
-            double unused_val;
-
-            list_iter_next(&it->list_it, &index, &unused_col, &unused_val);
-            List* bucket = it->map->table[index];
-
-            if (bucket && bucket->head != NULL) {
-                it->current_bucket_it = list_iter_create(bucket);
-                break;
-            }
-        }
-    }
-
-    list_iter_next(&it->current_bucket_it, row, col, val);
-}
-
-
-*/
 
 void map_iterator_next(MapIterator* it, int* row, int* col, double* val) {
     if (!map_iterator_has_next(it)) {
