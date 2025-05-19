@@ -21,6 +21,7 @@ Matrix* matrix_create(int rows, int cols) {
     matrix->cols = cols;
     matrix->vals = map_create();
     matrix->mult_vals = NULL;
+    matrix->scalar_val = 0;
 }
 
 void matrix_inc_val(Matrix* matrix, int row, int col, double val) {
@@ -54,6 +55,8 @@ Matrix* matrix_add(Matrix* a, Matrix* b) {
     matrix_append(result, a);
     matrix_append(result, b);
 
+    result->scalar_val = a->scalar_val + b->scalar_val;
+
     return result;
 }
 
@@ -78,6 +81,8 @@ Matrix* matrix_sub(Matrix* a, Matrix* b) {
     matrix_append(result, a);
     matrix_decrement(result, b);
 
+    result->scalar_val = a->scalar_val -  b->scalar_val;
+
     return result;
 }
 
@@ -92,19 +97,15 @@ Matrix* matrix_scalar_mult(Matrix* matrix, double scalar) {
         matrix_set(result, row, col, val * scalar);
     }
 
+    matrix->scalar_val *= scalar;
+
     return result;
 }
 
 Matrix* matrix_scalar_add(Matrix* matrix, double scalar) {
     Matrix* result = matrix_create(matrix->rows, matrix->cols);
-    MapIterator map_it = map_iterator_create(matrix->vals);
-
-    for(int i = 0; i < matrix->rows; i++) {
-        for(int j = 0; j < matrix->cols; j++) {
-            int old = matrix_get(matrix, i, j);
-            matrix_set(result, i, j, old + scalar);
-        }
-    }
+    matrix_append(result, matrix);
+    result->scalar_val = matrix->scalar_val + scalar;
 
     return result;
 }
@@ -126,16 +127,10 @@ Matrix* matrix_transpose(Matrix* matrix) {
         double val;
         map_iterator_next(&map_iter, &row, &col, &val);
         
-        #ifdef DEBUG
-        printf("\nresult[%d][%d] = %.2f\n", row, col, val);
-        #endif
-
         matrix_set(result, col, row, val);
-
-        #ifdef DEBUG
-        matrix_print(result);
-        #endif
     }
+
+    result->scalar_val = matrix->scalar_val;
 
     return result;
 }
@@ -201,15 +196,17 @@ Matrix* matrix_mult(Matrix* a, Matrix* b) {
 
 // Set value in matrix
 void matrix_set(Matrix* matrix, int row, int col, double val) {
-    if(matrix->mult_vals != NULL) matrix->mult_vals = NULL;
-    map_set(matrix->vals, row, col, val);
+    if(matrix->mult_vals != NULL) 
+        matrix->mult_vals = NULL;
+    
+    map_set(matrix->vals, row, col, val - matrix->scalar_val);
 }
 
 double matrix_get(Matrix* matrix, int row, int col) {
     if(row < 0 || row > matrix->rows || col < 0 || col > matrix->cols)
         return -DBL_MAX;
 
-    return map_get(matrix->vals, row, col);
+    return map_get(matrix->vals, row, col) + matrix->scalar_val;
 }
 
 void matrix_print(Matrix* matrix) {
@@ -230,7 +227,7 @@ void matrix_print(Matrix* matrix) {
     for (int i = 0; i < matrix->rows; ++i) { // Iterate through rows
         printf("%s\n", sep_line); // Print horizontal border
         for (int j = 0; j < matrix->cols; ++j) { // Iterate columns
-            double val = map_get(matrix->vals, i, j); // Get value to print
+            double val = map_get(matrix->vals, i, j) + matrix->scalar_val; // Get value to print
             printf("| %6.2f ", val); // Print val
         }
         printf("|\n");
@@ -242,6 +239,7 @@ void matrix_print(Matrix* matrix) {
 Matrix* matrix_copy(Matrix* matrix) {
     Matrix* copy = matrix_create(matrix->rows, matrix->cols);
     matrix_append(copy, matrix);
+    copy->scalar_val = matrix->scalar_val;
 
     return copy;
 }
