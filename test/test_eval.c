@@ -87,8 +87,28 @@ void test_replace_all() {
 
 void test_eval_expr_case(char* expr, Matrix* exp_result) {
     Matrix* result = solve_expr(expr);
+    
+    printf("Test result:\n");
+    matrix_print(result);
+
     ASSERT_MATRIX_EQ(exp_result, result);
     matrix_free(result);
+}
+
+void test_eval_expr_invalid() {
+    char* expr_1 = "A + B + C";
+    test_eval_expr_case(expr_1, NULL);
+    char* expr_2 = "A + B)";
+    test_eval_expr_case(expr_2, NULL);
+    char* expr_3 = "(A + B";
+    test_eval_expr_case(expr_3, NULL);
+    char* expr_4 = "A ++ B";
+    test_eval_expr_case(expr_4, NULL);
+    char* expr_5 = "";
+    test_eval_expr_case(expr_5, NULL);
+    char* expr_6 = "$";
+    test_eval_expr_case(expr_6, NULL);
+
 }
 
 void test_eval_expr() {
@@ -132,9 +152,17 @@ void test_eval_expr() {
     matrix_set(res_4, 4, 0, 56);
     test_eval_expr_case(expr_4, res_4);
 
+    char* expr_5 = "A[1][1] * B[1][4]";
+    Matrix* res_5 = matrix_create(1, 1);
+    matrix_set(res_5, 0, 0, 80);
+    test_eval_expr_case(expr_5, res_5);
+
     matrix_free(res_1);
     matrix_free(res_2);
     matrix_free(res_3);
+    matrix_free(res_4);
+    matrix_free(res_5);
+    //matrix_free(res_6);
 }
 
 void init_user_matrices() {
@@ -157,6 +185,7 @@ void test_eval() {
     test_convert_rpn();
     test_replace_all();
     test_eval_expr();
+    test_eval_expr_invalid();
     end_test("Expression Evaluation");
 }
 

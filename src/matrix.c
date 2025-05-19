@@ -109,6 +109,9 @@ Matrix* matrix_scalar_add(Matrix* matrix, double scalar) {
 
 
 Matrix* matrix_transpose(Matrix* matrix) {
+    if(!matrix)
+        return NULL;
+
     Matrix* result = matrix_create(matrix->cols, matrix->rows);
     MapIterator map_iter= map_iterator_create(matrix->vals);
 
@@ -150,7 +153,19 @@ void init_mult_vals(Matrix* matrix) {
     matrix->mult_vals = mult_vals;
 }
 
+
 Matrix* matrix_mult(Matrix* a, Matrix* b) {
+    if(!a || !b) {
+        #ifdef TEST
+        if(!a)
+            printf("First operand is NULL\n");
+        if(!b)
+            printf("Second operand is NULL\n");
+        #endif 
+
+        return NULL;
+    }
+
     if(a->cols != b->rows)
         return NULL;
 
@@ -196,12 +211,17 @@ double matrix_get(Matrix* matrix, int row, int col) {
 }
 
 void matrix_print(Matrix* matrix) {
+    if(!matrix) {
+        printf("Matrix does not exist\n");
+        return;
+    }
+
     int width = 9; // Width per cell
     char sep_line[1024] = "+";
 
     // Build horizontal separator line
-    for (int i = 0; i < matrix->cols; ++i) {
-        for (int j = 0; j < width - 1; ++j) strcat(sep_line, "-");
+    for(int i = 0; i < matrix->cols; ++i) {
+        for(int j = 0; j < width - 1; ++j) strcat(sep_line, "-");
         strcat(sep_line, "+");
     }
 
@@ -216,12 +236,14 @@ void matrix_print(Matrix* matrix) {
     printf("%s\n", sep_line); // Final bottom border
 }
 
+
 Matrix* matrix_copy(Matrix* matrix) {
     Matrix* copy = matrix_create(matrix->rows, matrix->cols);
     matrix_append(copy, matrix);
 
     return copy;
 }
+
 
 void matrix_free(Matrix* matrix) {
     if(matrix == NULL) 

@@ -7,6 +7,8 @@
 #include "../include/matrix.h"
 #include "../include/eval_expr.h"
 #include "../include/parse_expr.h"
+#include "../include/matrix_cli.h"
+#include "../include/runtime_data.h"
 
 typedef bool (*CommandFn)(char* input);
 #define NUM_COMMANDS 4
@@ -33,12 +35,68 @@ char** split_input(const char* input, int* count) {
     return NULL;
 }
 
+bool create_matrix(char* name) {
+    Matrix* new = get_matrix_user(name);
+    if(!new) {
+        printf("Error: Matrix not created\n");
+        return false;
+    }
+
+    int res = rd_save_matrix(name, new);
+    if(res > 0) {
+        printf("Error: Matrix with name %s already exists\n", name);
+        return false;
+    }
+    return true;
+}
+
 bool set_matrix(char* input) {
-    return false;
+    int num_args = 0;
+    char** args = get_args(input, &num_args);
+
+    if(!args || num_args == 0) {
+        printf("Error: No Matrix name provided\n");
+        return false;
+    }
+
+
+    for(int i = 0; i < num_args; i++) {
+        if(!args[i]) {
+            printf("Error: Invalid argument %d\n", i);
+            continue;
+        }
+        create_matrix(args[i]);
+    }
+
+    return true;
 }
 
 bool show_matrix(char* input) {
+    int num_args = 0;
+    char** args = get_args(input, &num_args);
 
+    if(!args || num_args == 0) {
+        printf("Error: No Matrix name provided\n");
+        return false;
+    }
+
+    for(int i = 0; i < num_args; i++) {
+        if(!args[i]) {
+            printf("Error: Invalid argument %d\n", i);
+            continue;
+        }
+
+        // Check if matrix exists
+        Matrix* matrix = rd_get_matrix(args[i]);
+        if(!matrix) {
+            printf("Error: Matrix %s not found\n", args[i]);
+            continue;
+        }
+
+        matrix_print(matrix);
+    }
+
+    return true;
 }
 
 bool help(char* input) {
@@ -46,6 +104,7 @@ bool help(char* input) {
 }
 
 bool list_matrices(char* input) {
+    rd_print_all();
     return true;
 }
 
@@ -78,18 +137,128 @@ bool find_command(char* input) {
     return false;
 }
 
+
+char** split_expr(const char* str, int* count) {
+    if (!str || !count) return NULL;
+
+    char* copy = strdup(str);  // Create a modifiable copy
+    if (!copy) return NULL;
+
+    char** result = NULL;
+    int size = 0;
+    int capacity = 4;
+
+    result = malloc(capacity * sizeof(char*));
+    if (!result) {
+        free(copy);
+        return NULL;
+    }
+
+    char* token = strtok(copy, "=");
+    while (token != NULL) {
+        if (size >= capacity) {
+            capacity *= 2;
+            char** temp = realloc(result, capacity * sizeof(char*));
+            if (!temp) {
+                // Free previously allocated memory
+                for (int i = 0; i < size; i++) free(result[i]);
+                free(result);
+                free(copy);
+                return NULL;
+            }
+            result = temp;
+        }
+
+        result[size++] = strdup(token);  // Copy the token into a new string
+        token = strtok(NULL, "=");
+    }
+
+    *count = size;
+    free(copy);
+    return result;
+}
+
+bool save_result(Matrix* result, char* target) {
+    Matrix* matrix = NULL;
+    matrix == rd_get_matrix(target);
+    bool res_flag = true;
+
+    matrix_print(result);
+    matrix_print(matrix);
+
+    if(!matrix) {
+        //printf("Target: %s\n", target);
+        res_flag = rd_overwrite_matrix(target, result);
+    } else {
+        //printf("TTarget: %s\n", target);
+        res_flag = rd_overwrite_matrix(target, result);
+        //if(res_flag)
+            //printf("Matrix %s overwritten\n", target);
+    }
+
+    return res_flag;
+}
+
+
 bool handle_input(char* input) {
     if(find_command(input))
         return true;
 
-    int num_tokens = 0;
-    int rpn_len = 0;
-    Token* expr = parse_expr(input, &num_tokens);
-    Token* rpn_expr = convert_rpn(expr, num_tokens, &rpn_len);
-    Matrix* result = eval_expr(rpn_expr, rpn_len);
-    if(result == NULL)
+    int num_args = 0;
+    char** expr = split_expr(input, &num_args);
+    if(!expr || num_args != 2) {
+        printf("Error: Invalid expression\n");
         return false;
-    
-    return true;
+    }
 
+    int end, row, col;
+    char* name;
+    Matrix* matrix = NULL; // Will contain valid Matrix if index is being assigned
+
+    // Check if matrix index is being assigned
+    if(parse_pattern(expr[0], 0, &end) && expr[0][end] == '\0') {
+        get_matrix_index(expr[0], &name, &row, &col);
+        name = trim(name);
+
+        if(name != NULL) 
+            matrix = rd_get_matrix(name);
+
+    }
+
+    Matrix* result = solve_expr(expr[1]);
+
+    #ifdef DEBUG
+    printf("\nMatrix %s:\n", name);
+    matrix_print(matrix);
+    printf("\nResult MAtrix:\n");
+    matrix_print(result);
+    #endif
+
+    if(!result)
+        return false;
+
+    if(matrix) {
+        #ifdef DEBUG
+        printf("Matrix Valid (handle_input())\n");
+        #endif
+
+        if(!result ||result->rows != 1 || result->cols != 1) {
+            printf("Error: Expression must produce number to assign to matrix index\n");
+            return false;
+        }
+
+        if(row >= matrix->rows || row < 0 || col >= matrix->cols || col < 0) {
+            printf("Error: Indices [%d][%d] out of bounds for matrix %s\n", row, col, name);
+            return false;
+        }
+
+        matrix_set(matrix, row, col, matrix_get(result, 0, 0));
+        return true;
+    } else {
+        #ifdef DEBUG
+        printf("Matrix Invalid (handle_input())\n");
+        #endif
+        
+        return save_result(result, expr[0]);
+    }
 }

@@ -30,6 +30,9 @@
         "runtime_data.h": "c",
         "random": "c",
         "__tree": "c",
-        "map": "c"
+        "map": "c",
+        "typeinfo": "c",
+        "typeindex": "c",
+        "text_encoding": "c"
     }
 }

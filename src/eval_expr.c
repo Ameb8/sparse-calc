@@ -117,9 +117,6 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
     return output;
 }
 
-Matrix* get_matrix(char* name) {
-    return NULL; 
-}
 
 Operand handle_mult(Operand a, Operand b) {
     if(a.matrix != NULL && b.matrix != NULL) { // Matrix multiplication
@@ -261,7 +258,7 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
     printf("Token type: %d\tToken value: %s\n", expr[i].type, expr[i].symbol);
     #endif
 
-    if(expr == NULL)
+    if(!expr)
         return NULL;
     
     Operand stack[32];

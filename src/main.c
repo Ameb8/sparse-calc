@@ -6,11 +6,29 @@
 #include "../include/matrix.h"
 #include "../test/test.h"
 #include "../include/matrix_cli.h"
+#include "../include/parse_input.h"
+
+#define MAX_INPUT_LENGTH 256
 
 void run_app() {
-    //printf("run_app() called\n");
-    //Matrix* a = get_user_matrix();
+    char input[MAX_INPUT_LENGTH];
 
+    while (1) {
+        printf(">");
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            // Input error or EOF
+            break;
+        }
+
+        // Remove newline character if present
+        input[strcspn(input, "\n")] = '\0';
+
+        if (strcmp(input, "exit") == 0 || strcmp(input, "quit") == 0) {
+            break;
+        }
+
+        handle_input(input);
+    }
 }
 
 

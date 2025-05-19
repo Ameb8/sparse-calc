@@ -1,6 +1,6 @@
 #ifdef TEST
 
-#include <stdlib.h> 
+#include <stdlib.h>
 #include "../include/runtime_data.h"
 #include "test_util.h"
 
@@ -55,7 +55,7 @@ void test_matrix_mult() {
     matrix_set(exp_res, 3, 3, 112);
     matrix_set(exp_res, 4, 0, 22);
 
-    Matrix* result = matrix_mult(x, y);
+    Matrix* result = matrix_mult(x, y); // ERROR HERE ***
     ASSERT_MATRIX_EQ(exp_res, result);
 
 

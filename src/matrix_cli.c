@@ -52,3 +52,59 @@ Matrix* get_matrix_user(char* matrix_name) {
     Matrix* matrix = matrix_create(rows, cols);
     return matrix;
 }
+
+
+// Helper to trim leading and trailing whitespace from a word
+char* trim(const char* str) {
+    if(!str) {
+        printf("Input is NULL!\n");
+        return NULL;
+    } else {
+        printf("Input: %s\n", str);
+    }
+    if(!strcmp(str, ""))
+        printf("trim() input empty\n");
+
+    while (isspace((unsigned char)*str)) str++;
+    if (*str == 0) 
+        return strdup("");  // all spaces
+
+    const char* end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end)) end--;
+
+    size_t len = end - str + 1;
+    char* trimmed = malloc(len + 1);
+    if (trimmed) {
+        strncpy(trimmed, str, len);
+        trimmed[len] = '\0';
+    }
+    return trimmed;
+}
+
+char** get_args(const char* input, int* count) {
+    char* copy = strdup(input); // modifiable copy
+    char* token = strtok(copy, " \t\n"); // first word
+    if (!token) {
+        *count = 0;
+        free(copy);
+        return NULL;
+    }
+
+    // Now collect all remaining tokens
+    char** result = NULL;
+    int capacity = 4;
+    int size = 0;
+    result = malloc(capacity * sizeof(char*));
+
+    while ((token = strtok(NULL, " \t\n")) != NULL) {
+        if (size >= capacity) {
+            capacity *= 2;
+            result = realloc(result, capacity * sizeof(char*));
+        }
+        result[size++] = trim(token);
+    }
+
+    *count = size;
+    free(copy);
+    return result;
+}

@@ -30,6 +30,19 @@ void test_failed() {
 
 
 void matrix_assert_eq(Matrix* expected, Matrix* actual) {
+    if(expected == NULL && actual == NULL) {
+        test_passed();
+        return;
+    } else if (expected == NULL || actual == NULL) {
+        printf("Expected:\n");
+        matrix_print(expected);
+        printf("Actual:\n");
+        matrix_print(actual);
+
+        test_failed();
+        printf("FAILED: exactly one matrix was NULL\n");
+        return;
+    }
 
     // Compare number of non-zero elements
     ASSERT_INT_EQ(matrix_size(expected), matrix_size(actual));

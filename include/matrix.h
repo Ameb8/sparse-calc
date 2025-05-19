@@ -26,7 +26,6 @@ double matrix_get(Matrix* matrix, int row, int col);
 void matrix_print(Matrix* matrix);
 Matrix* matrix_copy(Matrix* matrix);
 void matrix_free(Matrix* matrix);
-
 Matrix* scalar_subr(Matrix* matrix, double val);
 
 

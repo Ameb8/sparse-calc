@@ -4,6 +4,8 @@
 #include "hash_map.h"
 #include "token.h"
 
+bool handle_input(char* input);
+
 // Allows test.c to access methods for unit testing
 #ifdef TEST 
 #include "matrix.h"

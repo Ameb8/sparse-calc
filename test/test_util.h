@@ -51,38 +51,3 @@ void matrix_assert_eq(Matrix* expected, Matrix* actual);
 #endif
 #endif
 
-/*
-#define ASSERT_INT_EQ(actual, expected) do { \
-    total_tests++; \
-    if ((actual) != (expected)) { \
-        failed_tests++; \
-        printf("FAILED in %s: %s != %s at %s:%d\n", __func__, #actual, #expected, __FILE__, __LINE__); \
-    } \
-} while (0)
-
-#define ASSERT_DOUBLE_EQ(actual, expected, epsilon) do { \
-    total_tests++; \
-    if (fabs((actual) - (expected)) > (EPSILON)) { \
-        failed_tests++; \
-        printf("FAILED in %s: %s == %s (%.6f != %.6f) at %s:%d\n", \
-            __func__, #actual, #expected, (actual), (expected), __FILE__, __LINE__); \
-    } \
-} while (0)
-
-#define ASSERT_STR_EQ(actual, expected) do { \
-    total_tests++; \
-    if ((actual) == NULL || (expected) == NULL || strcmp((actual), (expected)) != 0) { \
-        failed_tests++; \
-        printf("FAILED in %s: %s != %s (%s != %s) at %s:%d\n", \
-            __func__, #actual, #expected, \
-            (actual) ? (actual) : "NULL", \
-            (expected) ? (expected) : "NULL", \
-            __FILE__, __LINE__); \
-    } \
-} while (0)
-
-#define ASSERT_MATRIX_EQ(expected, actual) \
-    matrix_assert_eq((expected), (actual), __FILE__, __LINE__, __func__)
-
-*/
-
