@@ -116,6 +116,8 @@ bool clear_terminal(char* input) {
     #else
         system("clear");
     #endif
+
+    return true;
 }
 
 bool starts_with(const char* input, const char* command) {
