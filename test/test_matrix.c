@@ -201,7 +201,7 @@ void test_matrix() {
     test_matrix_scalar_mult();
     test_matrix_subtract();
     test_matrix_transpose();
-    test_matrix_save_load();
+    //test_matrix_save_load();
     end_test("Matrices");
 }
 

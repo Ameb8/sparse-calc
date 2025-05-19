@@ -156,8 +156,20 @@ void test_eval_expr() {
     matrix_set(res_5, 0, 0, 80);
     test_eval_expr_case(expr_5, res_5);
 
-    //char* expr_6 = "A - 5";
-    //Matrix* res_6 = matrix_create(5, 5);
+    char* expr_6 = "A - 5";
+    Matrix* res_6 = matrix_create(5, 5);
+    for(int i = 0; i < 5; i++) {
+        for(int j = 0; j < 5; j++)
+            matrix_set(res_6, i, j, -5);
+    }
+    matrix_set(res_6, 0, 2, 2);
+    matrix_set(res_6, 1, 1, -1);
+    matrix_set(res_6, 2, 0, -4);
+    matrix_set(res_6, 3, 4, 9);
+    matrix_set(res_6, 4, 4, 6);
+    printf("\n\n\nSUBTRACTION TEST:\n");
+    matrix_print(res_6);
+    test_eval_expr_case(expr_6, res_6);
 
     matrix_free(res_1);
     matrix_free(res_2);
@@ -179,6 +191,10 @@ void init_user_matrices() {
 
     rd_save_matrix("A", a);
     rd_save_matrix("B", b);
+
+    printf("\n\n\n\n\nUSER MATRICES:\n");
+    matrix_print(a);
+    matrix_print(b);
 }
 
 void test_eval() {

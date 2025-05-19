@@ -99,11 +99,11 @@ Matrix* matrix_scalar_add(Matrix* matrix, double scalar) {
     Matrix* result = matrix_create(matrix->rows, matrix->cols);
     MapIterator map_it = map_iterator_create(matrix->vals);
 
-    while(map_iterator_has_next(&map_it)) {
-        int row, col;
-        double val;
-        map_iterator_next(&map_it, &row ,&col, &val);
-        matrix_set(result, row, col, val + scalar);
+    for(int i = 0; i < matrix->rows; i++) {
+        for(int j = 0; j < matrix->cols; j++) {
+            int old = matrix_get(matrix, i, j);
+            matrix_set(result, i, j, old + scalar);
+        }
     }
 
     return result;

@@ -151,19 +151,51 @@ Operand handle_add(Operand a, Operand b) {
 }
 
 Operand handle_sub(Operand a, Operand b) {
+    #ifdef DEBUG
+    printf("SUBTRACTION:\n");
+    if(!a.matrix) {
+        printf("Operand 1: %.2f\n", a.val);
+    } else {
+        printf("Operand 1:\n");
+        matrix_print(a.matrix);
+    }
+    if(!b.matrix) {
+        printf("Operand 2: %.2f\n", b.val);
+    } else {
+        printf("Operand 2:\n");
+        matrix_print(b.matrix);
+    }
+    #endif
+
     Matrix* result;
     
     if(a.matrix != NULL && b.matrix != NULL) // Matrix subtraction
         result = matrix_sub(a.matrix, b.matrix);
-    else if(a.matrix != NULL) // Scalar subtraction
-        result = matrix_scalar_add(a.matrix, b.val * -1);
-    //else if(b.matrix != NULL) // Scalar subtraction
-        //result = matrix_scalar_subr(b.matrix, a.val * -1);
-    else // Numeric subtraction
-        return operand_create(NULL, a.val - b.val);
+    else if(a.matrix != NULL) { // Scalar subtraction
+        #ifdef DEBUG
+        printf("scalar sub attempted:\n");
+        #endif
 
-    if(result == NULL)
+        result = matrix_scalar_add(a.matrix, b.val * -1);
+    //} else if(b.matrix != NULL) {// Scalar subtraction
+        //result = matrix_scalar_subr(b.matrix, a.val * -1);
+        //#ifdef DEBUG
+        //printf("Scalar R sub attempted\n");
+        //#endif
+    } else {// Numeric subtraction
+        #ifdef DEBUG
+        printf("Numeric sub attempted\n");
+        #endif
+
+        return operand_create(NULL, a.val - b.val);
+    }
+
+    if(!result)
         return operand_error();
+
+    #ifdef DEBUG
+    matrix_print(result);
+    #endif
 
     return operand_create(result, 0);
 }
@@ -186,7 +218,7 @@ Operand apply_bin_op(char* op, Operand a, Operand b) {
     if(!strcmp(op, "+"))
         return handle_add(a, b);
     if(!strcmp(op, "-"))
-        return handle_sub(a, b);
+        return handle_sub(b, a);
     
     return handle_numeric(op, a, b);
 
