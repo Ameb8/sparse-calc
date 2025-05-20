@@ -151,48 +151,95 @@ void init_mult_vals(Matrix* matrix) {
 }
 
 
-Matrix* matrix_mult(Matrix* a, Matrix* b) {
-    if(!a || !b) {
-        #ifdef TEST
-        if(!a)
-            printf("First operand is NULL\n");
-        if(!b)
-            printf("Second operand is NULL\n");
-        #endif 
+// Add 1st operand multiplied by b-sized matrix of only its scalar val to result
+void scalar_a(Matrix* matrix, Matrix* result, double scalar_val) {
+    MapIterator map_it = map_iterator_create(matrix->vals);
 
-        return NULL;
+    while(map_iterator_has_next(&map_it)) {
+        // Get next non-zero value in a
+        int row, col;
+        double val;
+        map_iterator_next(&map_it, &row, &col, &val);
+        
+        for(int i = 0; i < result->cols; i++) {
+            double old_val = matrix_get(result, row, i);
+            matrix_set(result, row, i, val * scalar_val + old_val);
+        }
     }
+}
+
+// Add 2st operand multiplied by a-sized matrix of only its scalar val to result
+void scalar_b(Matrix* matrix, Matrix* result, double scalar_val) {
+    MapIterator map_it = map_iterator_create(matrix->vals);
+
+    while (map_iterator_has_next(&map_it)) {
+        // Get next non-zero value in b
+        int row, col;
+        double val;
+        map_iterator_next(&map_it, &row, &col, &val);
+
+        for (int i = 0; i < result->rows; i++) {
+            double old_val = matrix_get(result, i, col);
+            matrix_set(result, i, col, val * scalar_val + old_val);
+        }
+    }
+}
+
+
+Matrix* matrix_mult(Matrix* a, Matrix* b) {
+    if(!a || !b) 
+        return NULL;
 
     if(a->cols != b->rows)
-        return NULL;
+        return NULL; // Dimensions invalid for dot product
 
+    // Create matrix to hold result
     Matrix* result = matrix_create(a->rows, b->cols);
 
-    if(b->mult_vals == NULL) {
-        init_mult_vals(b);
-    }
+    if(b->mult_vals == NULL)
+        init_mult_vals(b); // Initialize RowMap in b if necessary
 
     MapIterator a_iter = map_iterator_create(a->vals);
-    
-    while(map_iterator_has_next(&a_iter)) {
+
+    while(map_iterator_has_next(&a_iter)) { // Iterate through non-zero a values
+        // Get next non-zero a value
         int row_a, col_a;
         double val_a;
         map_iterator_next(&a_iter, &row_a, &col_a, &val_a);
+        
+        // Get b row
         List* row_b_list = row_map_get_row(b->mult_vals, col_a);
-        if(row_b_list == NULL) continue;
+        if(row_b_list == NULL) 
+            continue;
         ListIterator row_b_iter = list_iter_create(row_b_list);
 
+        // Iterate through values in b row
         while(list_iter_has_next(&row_b_iter)) {
+            // Get next non-zero element from b row
             int row_b, col_b;
             double val_b;
             list_iter_next(&row_b_iter, &row_b, &col_b, &val_b);
+
+            // Compute product and sum to result element
             double old_val = map_get(result->vals, row_a, col_b);
             map_set(result->vals, row_a, col_b, val_a * val_b + old_val);
         }
     }
 
+    // Calculate a and b times each other's scalar values added to result
+    if(a->scalar_val != 0)
+        scalar_a(a, result, b->scalar_val);
+    if(b->scalar_val != 0)
+        scalar_b(b, result, a->scalar_val);
+
+    // Set results scalar value
+    if(a->scalar_val != 0 && b->scalar_val != 0)
+        result->scalar_val = a->scalar_val * b->scalar_val * a->cols;
+        
+
     return result;
 }
+
 
 // Set value in matrix
 void matrix_set(Matrix* matrix, int row, int col, double val) {
