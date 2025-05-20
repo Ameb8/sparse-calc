@@ -81,8 +81,6 @@ Matrix* rd_get_matrix(char* name) {
 }
 
 void rd_print_all() {
-    for(int i = 0; i < num_matrices; i++) {
+    for(int i = 0; i < num_matrices; i++)
         printf("Matrix %s (%d x %d)\n", matrix_names[i], matrices[i]->rows, matrices[i]->cols);
-        //matrix_print(matrices[i]);
-    }
 }

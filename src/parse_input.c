@@ -9,6 +9,7 @@
 #include "../include/parse_expr.h"
 #include "../include/matrix_cli.h"
 #include "../include/runtime_data.h"
+#include "../include/repository.h"
 
 typedef bool (*CommandFn)(char* input);
 #define NUM_COMMANDS 5
@@ -24,13 +25,17 @@ bool show_matrix(char* input);
 bool help(char* input);
 bool set_matrix(char* input);
 bool clear_terminal(char* input);
+bool save_as_matrix(char* input);
+bool save_matrix(char* input);
 
 Command commands[] = {
     {"matrix", set_matrix},
     {"list", list_matrices},
     {"show", show_matrix},
     {"help", help},
-    {"clear", clear_terminal}
+    {"clear", clear_terminal},
+    {"save as", save_as_matrix},
+    {"save", save_matrix}
 };
 
 char** split_input(const char* input, int* count) {
@@ -116,6 +121,88 @@ bool clear_terminal(char* input) {
     #else
         system("clear");
     #endif
+
+    return true;
+}
+
+
+bool save_matrix_repo(char* name, char* save_name) {
+    if(!name || !save_name) { // Check if argument valid
+        printf("Error: Invalid matrix name %s\n", name);
+        return false;
+    }
+
+    // Get argument matrix
+    Matrix* matrix = get_matrix_user(trim(save_name));
+
+    if(!matrix) { // argument is not valid matrix name
+        printf("Matrix %s not found\n", trim(save_name));
+        return false;
+    }
+
+    // Check if name unique
+    bool save = repo_is_unique(save_name);
+    
+    if(!save) // If name not unique, check if user wants to overwrite
+        save = replace_saved_matrix(save_name);
+    
+    if(save) // Save matrix
+        return repo_matrix_save(save_name, matrix);
+    
+    return false; // Matrix not saved
+}
+
+bool save_as_matrix(char* input) {
+    // Get arguments
+    int num_args = 0;
+    char** args = get_args(input, &num_args);
+
+    // Check if arguments
+    if(!args || num_args == 0) {
+        printf("Error: No Matrix name provided\n");
+        return false;
+    }
+
+    //Iterate through arguments
+    for(int i = 0; i < num_args; i++) {
+        // Get name to save as
+        char* save_name = get_matrix_name();
+        bool saved = false;
+
+        if(save_name)
+            saved = save_matrix_repo(args[i], save_name);
+        else
+            printf("Matrix name invalid\n");
+
+        if(saved)
+            printf("Matrix %s saved as %s\n", trim(args[i]), save_name);
+        else
+            printf("Matrix %s not saved\n", trim(args[i]));
+    }
+
+    return true;
+}
+
+bool save_matrix(char* input) {
+    // Get arguments
+    int num_args = 0;
+    char** args = get_args(input, &num_args);
+    
+    // Check if arguments
+    if(!args || num_args == 0) {
+        printf("Error: No Matrix name provided\n");
+        return false;
+    }
+    
+    //Iterate through arguments
+    for(int i = 0; i < num_args; i++) {
+        bool saved = false;
+
+        if(saved)
+            printf("Matrix %s\n", trim(args[i]), trim(args[i]));
+        else
+            printf("Matrix %s not saved\n", trim(args[0]));
+    }
 
     return true;
 }

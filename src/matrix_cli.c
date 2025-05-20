@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include "../include/matrix.h"
+#include "../include/repository.h"
 
 int get_user_int(const char *prompt, int lower, int upper) {
     char buffer[100];
@@ -102,4 +103,60 @@ char** get_args(const char* input, int* count) {
     *count = size;
     free(copy);
     return result;
+}
+
+bool replace_saved_matrix(char* name) {
+    char input[10];  // Buffer for user input
+
+    // Prompt user
+    printf("Matrix %s already saved. Would you like to overwrite? (y/n): ", name);
+
+    // Read input
+    if(fgets(input, sizeof(input), stdin) != NULL) {
+        // Strip newline character if present
+        size_t len = strlen(input);
+        if (len > 0 && input[len - 1] == '\n') {
+            input[len - 1] = '\0';
+        }
+
+        // Check if the first character is 'y' or 'Y'
+        if (tolower(input[0]) == 'y')
+            return true;
+    }
+
+    return false;
+}
+
+char* get_matrix_name() {
+    char buffer[256]; // Temporary buffer
+    printf("Enter input (only letters and underscores allowed): ");
+
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+        return NULL; // Read error
+    }
+
+    // Remove trailing newline
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+        len--;
+    }
+
+    if (len == 0) // Empty input
+        return NULL;
+
+    // Validate each character
+    for (size_t i = 0; i < len; i++) {
+        if (!(isalpha(buffer[i]) || buffer[i] == '_'))
+            return NULL; // Name invalid
+    }
+
+    // Allocate memory for a copy of the valid string
+    char* result = malloc(len + 1);
+    if (result == NULL) // Allocation failure
+        return NULL; 
+
+    strcpy(result, buffer); // Copy input to return string
+    
+    return trim(result);
 }

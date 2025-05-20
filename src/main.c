@@ -7,6 +7,7 @@
 #include "../test/test.h"
 #include "../include/matrix_cli.h"
 #include "../include/parse_input.h"
+#include "../include/repository.h"
 
 
 #define MAX_INPUT_LENGTH 256
