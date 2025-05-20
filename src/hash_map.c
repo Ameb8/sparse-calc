@@ -53,7 +53,8 @@ void map_set(HashMap* map, int row, int col, double val) {
             list_prepend(list, row, col, val);
         } else {
             map->size--;
-            if(map->table[index]->head == NULL) free(list);
+            if(map->table[index]->head == NULL) 
+                free(list);
         }
     }
 }

@@ -21,6 +21,7 @@ Matrix* matrix_create(int rows, int cols) {
     matrix->cols = cols;
     matrix->vals = map_create();
     matrix->mult_vals = NULL;
+    matrix->scalar_val = 0;
 }
 
 void matrix_inc_val(Matrix* matrix, int row, int col, double val) {
@@ -54,6 +55,8 @@ Matrix* matrix_add(Matrix* a, Matrix* b) {
     matrix_append(result, a);
     matrix_append(result, b);
 
+    result->scalar_val = a->scalar_val + b->scalar_val;
+
     return result;
 }
 
@@ -78,6 +81,8 @@ Matrix* matrix_sub(Matrix* a, Matrix* b) {
     matrix_append(result, a);
     matrix_decrement(result, b);
 
+    result->scalar_val = a->scalar_val -  b->scalar_val;
+
     return result;
 }
 
@@ -92,19 +97,15 @@ Matrix* matrix_scalar_mult(Matrix* matrix, double scalar) {
         matrix_set(result, row, col, val * scalar);
     }
 
+    matrix->scalar_val *= scalar;
+
     return result;
 }
 
 Matrix* matrix_scalar_add(Matrix* matrix, double scalar) {
     Matrix* result = matrix_create(matrix->rows, matrix->cols);
-    MapIterator map_it = map_iterator_create(matrix->vals);
-
-    for(int i = 0; i < matrix->rows; i++) {
-        for(int j = 0; j < matrix->cols; j++) {
-            int old = matrix_get(matrix, i, j);
-            matrix_set(result, i, j, old + scalar);
-        }
-    }
+    matrix_append(result, matrix);
+    result->scalar_val = matrix->scalar_val + scalar;
 
     return result;
 }
@@ -126,16 +127,10 @@ Matrix* matrix_transpose(Matrix* matrix) {
         double val;
         map_iterator_next(&map_iter, &row, &col, &val);
         
-        #ifdef DEBUG
-        printf("\nresult[%d][%d] = %.2f\n", row, col, val);
-        #endif
-
         matrix_set(result, col, row, val);
-
-        #ifdef DEBUG
-        matrix_print(result);
-        #endif
     }
+
+    result->scalar_val = matrix->scalar_val;
 
     return result;
 }
@@ -156,60 +151,110 @@ void init_mult_vals(Matrix* matrix) {
 }
 
 
-Matrix* matrix_mult(Matrix* a, Matrix* b) {
-    if(!a || !b) {
-        #ifdef TEST
-        if(!a)
-            printf("First operand is NULL\n");
-        if(!b)
-            printf("Second operand is NULL\n");
-        #endif 
+// Add 1st operand multiplied by b-sized matrix of only its scalar val to result
+void scalar_a(Matrix* matrix, Matrix* result, double scalar_val) {
+    MapIterator map_it = map_iterator_create(matrix->vals);
 
-        return NULL;
+    while(map_iterator_has_next(&map_it)) {
+        // Get next non-zero value in a
+        int row, col;
+        double val;
+        map_iterator_next(&map_it, &row, &col, &val);
+        
+        for(int i = 0; i < result->cols; i++) {
+            double old_val = matrix_get(result, row, i);
+            matrix_set(result, row, i, val * scalar_val + old_val);
+        }
     }
+}
+
+// Add 2st operand multiplied by a-sized matrix of only its scalar val to result
+void scalar_b(Matrix* matrix, Matrix* result, double scalar_val) {
+    MapIterator map_it = map_iterator_create(matrix->vals);
+
+    while (map_iterator_has_next(&map_it)) {
+        // Get next non-zero value in b
+        int row, col;
+        double val;
+        map_iterator_next(&map_it, &row, &col, &val);
+
+        for (int i = 0; i < result->rows; i++) {
+            double old_val = matrix_get(result, i, col);
+            matrix_set(result, i, col, val * scalar_val + old_val);
+        }
+    }
+}
+
+
+Matrix* matrix_mult(Matrix* a, Matrix* b) {
+    if(!a || !b) 
+        return NULL;
 
     if(a->cols != b->rows)
-        return NULL;
+        return NULL; // Dimensions invalid for dot product
 
+    // Create matrix to hold result
     Matrix* result = matrix_create(a->rows, b->cols);
 
-    if(b->mult_vals == NULL) {
-        init_mult_vals(b);
-    }
+    if(b->mult_vals == NULL)
+        init_mult_vals(b); // Initialize RowMap in b if necessary
 
     MapIterator a_iter = map_iterator_create(a->vals);
-    
-    while(map_iterator_has_next(&a_iter)) {
+
+    while(map_iterator_has_next(&a_iter)) { // Iterate through non-zero a values
+        // Get next non-zero a value
         int row_a, col_a;
         double val_a;
         map_iterator_next(&a_iter, &row_a, &col_a, &val_a);
+        
+        // Get b row
         List* row_b_list = row_map_get_row(b->mult_vals, col_a);
-        if(row_b_list == NULL) continue;
+        if(row_b_list == NULL) 
+            continue;
         ListIterator row_b_iter = list_iter_create(row_b_list);
 
+        // Iterate through values in b row
         while(list_iter_has_next(&row_b_iter)) {
+            // Get next non-zero element from b row
             int row_b, col_b;
             double val_b;
             list_iter_next(&row_b_iter, &row_b, &col_b, &val_b);
+
+            // Compute product and sum to result element
             double old_val = map_get(result->vals, row_a, col_b);
             map_set(result->vals, row_a, col_b, val_a * val_b + old_val);
         }
     }
 
+
+    // Calculate a and b times each other's scalar values added to result
+    if(b->scalar_val != 0)
+        scalar_a(a, result, b->scalar_val);
+    if(a->scalar_val != 0)
+        scalar_b(b, result, a->scalar_val);
+
+    // Set results scalar value
+    if(a->scalar_val != 0 && b->scalar_val != 0)
+        result->scalar_val = a->scalar_val * b->scalar_val * a->cols;
+        
+
     return result;
 }
 
+
 // Set value in matrix
 void matrix_set(Matrix* matrix, int row, int col, double val) {
-    if(matrix->mult_vals != NULL) matrix->mult_vals = NULL;
-    map_set(matrix->vals, row, col, val);
+    if(matrix->mult_vals != NULL) 
+        matrix->mult_vals = NULL;
+    
+    map_set(matrix->vals, row, col, val - matrix->scalar_val);
 }
 
 double matrix_get(Matrix* matrix, int row, int col) {
     if(row < 0 || row > matrix->rows || col < 0 || col > matrix->cols)
         return -DBL_MAX;
 
-    return map_get(matrix->vals, row, col);
+    return map_get(matrix->vals, row, col) + matrix->scalar_val;
 }
 
 void matrix_print(Matrix* matrix) {
@@ -230,7 +275,7 @@ void matrix_print(Matrix* matrix) {
     for (int i = 0; i < matrix->rows; ++i) { // Iterate through rows
         printf("%s\n", sep_line); // Print horizontal border
         for (int j = 0; j < matrix->cols; ++j) { // Iterate columns
-            double val = map_get(matrix->vals, i, j); // Get value to print
+            double val = map_get(matrix->vals, i, j) + matrix->scalar_val; // Get value to print
             printf("| %6.2f ", val); // Print val
         }
         printf("|\n");
@@ -242,6 +287,7 @@ void matrix_print(Matrix* matrix) {
 Matrix* matrix_copy(Matrix* matrix) {
     Matrix* copy = matrix_create(matrix->rows, matrix->cols);
     matrix_append(copy, matrix);
+    copy->scalar_val = matrix->scalar_val;
 
     return copy;
 }

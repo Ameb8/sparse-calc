@@ -9,6 +9,7 @@ typedef struct {
     int cols;
     HashMap* vals;
     RowMap* mult_vals;
+    double scalar_val;
 } Matrix;
 
 
