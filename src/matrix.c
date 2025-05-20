@@ -226,10 +226,11 @@ Matrix* matrix_mult(Matrix* a, Matrix* b) {
         }
     }
 
+
     // Calculate a and b times each other's scalar values added to result
-    if(a->scalar_val != 0)
-        scalar_a(a, result, b->scalar_val);
     if(b->scalar_val != 0)
+        scalar_a(a, result, b->scalar_val);
+    if(a->scalar_val != 0)
         scalar_b(b, result, a->scalar_val);
 
     // Set results scalar value
