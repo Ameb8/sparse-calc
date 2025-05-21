@@ -12,8 +12,8 @@
 #include "../include/repository.h"
 
 typedef bool (*CommandFn)(char* input);
-#define NUM_COMMANDS 8
-#define MAX_MATRICES 50
+#define NUM_COMMANDS 11
+#define MAX_MATRICES 200
 
 typedef struct {
     const char* name;
@@ -25,9 +25,12 @@ bool show_matrix(char* input);
 bool help(char* input);
 bool set_matrix(char* input);
 bool clear_terminal(char* input);
+bool list_saved(char* input);
 bool save_as_matrix(char* input);
 bool save_matrix(char* input);
 bool load_matrix(char* input);
+bool drop_matrix(char* input);
+bool delete_matrix(char* input);
 
 Command commands[] = {
     {"matrix", set_matrix},
@@ -35,9 +38,12 @@ Command commands[] = {
     {"show", show_matrix},
     {"help", help},
     {"clear", clear_terminal},
+    {"saved", list_saved},
     {"save as", save_as_matrix},
     {"save", save_matrix},
-    {"load", load_matrix}
+    {"load", load_matrix},
+    {"drop", drop_matrix},
+    {"delete", delete_matrix}
 };
 
 char** split_input(const char* input, int* count) {
@@ -129,6 +135,11 @@ bool clear_terminal(char* input) {
 }
 
 
+bool list_saved(char* input) {
+    repo_list();
+}
+
+
 bool save_matrix_repo(char* name, char* save_name) {
     if(!name || !save_name) { // Check if argument valid
         printf("Error: Invalid matrix name %s\n", name);
@@ -146,7 +157,7 @@ bool save_matrix_repo(char* name, char* save_name) {
     // Check if name unique
     bool save = repo_is_unique(save_name);
     
-    if(!save) // If name not unique, check if user wants to overwrite
+    if(!save) { // If name not unique, check if user wants to overwrite
         save = replace_saved_matrix(save_name);
     
     if(save) // Save matrix
@@ -199,7 +210,7 @@ bool save_matrix(char* input) {
     
     //Iterate through arguments
     for(int i = 0; i < num_args; i++) {
-        bool saved = false;
+        bool saved = save_matrix_repo(trim(args[0]), trim(args[0]));
 
         if(saved)
             printf("Matrix %s saved\n", trim(args[i]));
@@ -232,6 +243,58 @@ bool load_matrix(char* input) {
     }
 
     return true;;
+}
+
+
+// Delete matrix from runtime memory
+bool drop_matrix(char* input) {
+    int num_args = 0;
+    char** args = get_args(input, &num_args);
+
+    // Check if arguments valid
+    if(!args || num_args == 0) {
+        printf("Error: No Matrix name provided\n");
+        return false;
+    }
+
+    // Iterate through arguments
+    for(int i = 0; i < num_args; i++) {
+        // Attempt to delete
+        bool exists = rd_delete_matrix(trim(args[i]));
+
+        if(!exists) { // Matrix not found
+            printf("Matrix %s does not exist\n", trim(args[0]));
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+// Delete matrix from persisted data
+bool delete_matrix(char* input) {
+    int num_args = 0;
+    char** args = get_args(input, &num_args);
+
+    // Check if arguments valid
+    if(!args || num_args == 0) {
+        printf("Error: No Matrix name provided\n");
+        return false;
+    }
+
+    // Iterate through arguments
+    for(int i = 0; i < num_args; i++) {
+        // Attempt to delete
+        bool exists = repo_matrix_delete(trim(args[i]));
+
+        if(!exists) { // Matrix not found
+            printf("Matrix %s was not deleted\n", trim(args[0]));
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool starts_with(const char* input, const char* command) {

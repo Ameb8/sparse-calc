@@ -5,7 +5,7 @@
 #include "../include/map_iterator.h"
 #include "../include/repository.h"
 
-sqlite3 *db = NULL;
+sqlite3* db = NULL;
 
 
 bool exec_sql(const char *sql) {
@@ -59,7 +59,7 @@ bool init_data() {
         "   col INTEGER,"
         "   val REAL NOT NULL,"
         "   PRIMARY KEY(name, row, col),"
-        "   FOREIGN KEY(name) REFERENCES matrices(name));";
+        "   FOREIGN KEY(name) REFERENCES matrices(name) ON DELETE CASCADE;";
     
     // Attempt to execute schema creation
     if(!exec_sql(pragma)) return false;
@@ -96,13 +96,6 @@ bool delete_matrix_vals(char* name) {
 bool insert_matrix_vals(char* name, Matrix* matrix) {
     if(!connect()) // Connect to database
         return false; // Connection failed
-    
-    // Attempt to delete existing values for matrix
-    bool delete_result = delete_matrix_vals(name);
-
-    // Return false if delete fails
-    if(!delete_result)
-        return false;
 
     // Create statement with placeholders
     const char* sql = "INSERT OR REPLACE INTO matrix_vals (name, row, col, val) VALUES (?, ?, ?, ?)";
@@ -122,6 +115,11 @@ bool insert_matrix_vals(char* name, Matrix* matrix) {
         int row, col;
         double val;
         map_iterator_next(&map_it, &row, &col, &val);
+
+        #ifdef DBG
+        printf("Values Inserted:\n");
+        printf("Row: %d, Col: %d, Value: %.2f\n", row, col, val);
+        #endif
 
         // Bind element to statement placeholder
         sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
@@ -146,9 +144,36 @@ bool insert_matrix_vals(char* name, Matrix* matrix) {
     return true;    
 }
 
+
+bool repo_matrix_delete(char* name) {
+    if(!connect()) // Connect to database
+        return false; // Connection failed
+
+    // Create query and statement
+    const char *sql = "DELETE FROM matrices WHERE name = ? LIMIT 1;";
+    sqlite3_stmt *stmt;
+
+    // Attempt to prepare statement
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return false;
+    }
+
+    sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
+    bool success = exec_prepared_stmt(stmt);
+    sqlite3_finalize(stmt);
+
+    return success;
+}
+
+
 bool repo_matrix_save(char* name, Matrix* matrix) {
     if(!connect()) // Connect to database
         return false; // Connection failed
+
+    // Delete existing matrix to cascade delete vals
+    repo_matrix_delete(name);
 
     // Create statement with placeholders
     const char* sql = "INSERT OR REPLACE INTO matrices (name, rows, cols, scalar_val) VALUES (?, ?, ?, ?)";
@@ -199,14 +224,17 @@ bool load_matrix_vals(char* name, Matrix* matrix) {
     // Bind matrix name to prepared statement
     sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
 
-    rc = sqlite3_step(stmt); // Execute query
-
     // Iterate result rows
     while((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
         // Get element from query results
         int row = sqlite3_column_int(stmt, 0);
         int col = sqlite3_column_int(stmt, 1);
         double val = sqlite3_column_double(stmt, 2);
+
+        #ifdef DBG
+        printf("Vals loaded:\n");
+        printf("Row: %d, Col: %d, Value: %.2f\n", row, col, val);
+        #endif
     
         matrix_set(matrix, row, col, val); // Add to matrix
     }
@@ -243,9 +271,14 @@ Matrix* repo_matrix_load(char* name) {
     Matrix* matrix = NULL;
 
     if(rc == SQLITE_ROW) { // Query successful
+        // Retrieve values from query
         int row = sqlite3_column_int(stmt, 0);
         int col = sqlite3_column_int(stmt, 1);
+        int scalar_val = sqlite3_column_double(stmt, 2);
+
+        // Instantiate matrix
         matrix = matrix_create(row, col);
+        matrix->scalar_val = scalar_val;
     } else if(rc == SQLITE_DONE) { // Matrix does not exist
         printf("Matrix %s does not exist\n", name);
         return NULL;
@@ -263,4 +296,42 @@ Matrix* repo_matrix_load(char* name) {
         return NULL;
 
     return matrix;
+}
+
+
+// Print names and dimensions of all saved matrices
+bool repo_list() {
+    if(!connect()) // Connect to database
+        return false; // Connection failed
+
+    // Create query and statement
+    const char *sql = "SELECT name, rows, cols FROM matrices;";
+    sqlite3_stmt* stmt;
+
+    // Attempt to prepare statement
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return false;
+    }
+
+
+    // Iterate result rows
+    while((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        // Get element from query results
+        const unsigned char *name = sqlite3_column_text(stmt, 0);
+        int rows = sqlite3_column_int(stmt, 1);
+        int cols = sqlite3_column_int(stmt, 2);
+        
+        printf("%s\t(%d x %d)\n", name, rows, cols);
+    }
+
+    if(rc != SQLITE_DONE)
+        return false;
+
+    // Free allocated memory for statement
+    sqlite3_finalize(stmt);
+
+    return true;
+
 }
