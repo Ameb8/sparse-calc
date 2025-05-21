@@ -12,7 +12,7 @@
 #include "../include/repository.h"
 
 typedef bool (*CommandFn)(char* input);
-#define NUM_COMMANDS 5
+#define NUM_COMMANDS 8
 #define MAX_MATRICES 50
 
 typedef struct {
@@ -27,6 +27,7 @@ bool set_matrix(char* input);
 bool clear_terminal(char* input);
 bool save_as_matrix(char* input);
 bool save_matrix(char* input);
+bool load_matrix(char* input);
 
 Command commands[] = {
     {"matrix", set_matrix},
@@ -35,7 +36,8 @@ Command commands[] = {
     {"help", help},
     {"clear", clear_terminal},
     {"save as", save_as_matrix},
-    {"save", save_matrix}
+    {"save", save_matrix},
+    {"load", load_matrix}
 };
 
 char** split_input(const char* input, int* count) {
@@ -54,6 +56,7 @@ bool create_matrix(char* name) {
         printf("Error: Matrix with name %s already exists\n", name);
         return false;
     }
+
     return true;
 }
 
@@ -133,7 +136,7 @@ bool save_matrix_repo(char* name, char* save_name) {
     }
 
     // Get argument matrix
-    Matrix* matrix = get_matrix_user(trim(save_name));
+    Matrix* matrix = rd_get_matrix(trim(save_name));
 
     if(!matrix) { // argument is not valid matrix name
         printf("Matrix %s not found\n", trim(save_name));
@@ -199,17 +202,41 @@ bool save_matrix(char* input) {
         bool saved = false;
 
         if(saved)
-            printf("Matrix %s\n", trim(args[i]), trim(args[i]));
+            printf("Matrix %s saved\n", trim(args[i]));
         else
-            printf("Matrix %s not saved\n", trim(args[0]));
+            printf("Matrix %s not saved\n", trim(args[i]));
     }
 
     return true;
 }
 
+bool load_matrix(char* input) {
+    // Get arguments
+    int num_args = 0;
+    char** args = get_args(input, &num_args);
+    
+    // Check if arguments
+    if(!args || num_args == 0) {
+        printf("Error: No Matrix name provided\n");
+        return false;
+    }
+    
+    //Iterate through arguments
+    for(int i = 0; i < num_args; i++) {
+        Matrix* matrix = repo_matrix_load(trim(args[i]));
+
+        if(!matrix)
+            return false;
+        
+        rd_save_matrix(trim(args[i]), matrix);
+    }
+
+    return true;;
+}
+
 bool starts_with(const char* input, const char* command) {
     // Check if str2 is longer than str1
-    if (strlen(command ) > strlen(input)) {
+    if (strlen(command) > strlen(input)) {
         return false; // input can't start with command if command is longer
     }
     
@@ -227,9 +254,9 @@ bool starts_with(const char* input, const char* command) {
 
 bool find_command(char* input) {
     for(int i = 0; i < NUM_COMMANDS; i++) {
-        if(starts_with(input, commands[i].name)) {
+        if(starts_with(input, commands[i].name))
             return commands[i].fn(input);
-        }
+
     }
 
     return false;
@@ -278,7 +305,7 @@ char** split_expr(const char* str, int* count) {
 
 bool save_result(Matrix* result, char* target) {
     Matrix* matrix = NULL;
-    matrix == rd_get_matrix(target);
+    matrix = rd_get_matrix(target);
     bool res_flag = true;
 
     if(!matrix) {

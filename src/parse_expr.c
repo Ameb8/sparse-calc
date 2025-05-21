@@ -55,33 +55,29 @@ int is_name_char(char c) {
 int parse_pattern(const char* str, int start, int* end) {
     int i = start;
     // Parse name
-    if (!is_name_char(str[i])) {
-        //printf("parse fail: not name char at pos %d (%c)\n", i, str[i]);
+    if(!is_name_char(str[i]))
         return 0;
-    }
 
-    while (is_name_char(str[i])) i++;
+    while(is_name_char(str[i])) i++;
     
     // Parse row index
-    if (str[i] != '[') {
-        //printf("parse fail: expected '[' at pos %d, got '%c'\n", i, str[i]);
+    if(str[i] != '[')
         return 0;
-    }
     
     i++;
-    if (str[i] == '-') i++; // optional minus
+    if(str[i] == '-') i++; // optional minus
 
-    if (!isdigit(str[i])) {
+    if(!isdigit(str[i])) {
         //printf("parse fail: expected digit at pos %d, got '%c'\n", i, str[i]);
         return 0;
     }
 
     while (isdigit(str[i])) i++;
     
-    if (str[i] != ']') {
+    if(str[i] != ']')
         //printf("parse fail: expected ']' after row index at pos %d, got '%c'\n", i, str[i]);
         return 0;
-    }
+
     i++;
 
     // Parse column index

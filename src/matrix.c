@@ -22,6 +22,8 @@ Matrix* matrix_create(int rows, int cols) {
     matrix->vals = map_create();
     matrix->mult_vals = NULL;
     matrix->scalar_val = 0;
+
+    return matrix;
 }
 
 void matrix_inc_val(Matrix* matrix, int row, int col, double val) {

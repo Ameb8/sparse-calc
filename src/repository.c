@@ -1,10 +1,37 @@
 #include <stdio.h>
+#include <string.h>
 #include <sqlite3.h>
 #include "../include/hash_map.h"
 #include "../include/map_iterator.h"
 #include "../include/repository.h"
 
 sqlite3 *db = NULL;
+
+
+bool exec_sql(const char *sql) {
+    char *err_msg = NULL;
+    int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+    
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        sqlite3_close(db);
+        return false;
+    }
+    return true;
+}
+
+bool exec_prepared_stmt(sqlite3_stmt *stmt) {
+    int rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    return true;
+}
+
 
 bool init_data() {
     // Attempt to open database connection
@@ -16,50 +43,59 @@ bool init_data() {
         return false;
     }
 
-    // Create table with sql
-    const char* sql_create = 
-        "PRAGMA foreign_keys = ON;"
+    // Create database schema if needed
+    const char* pragma = "PRAGMA foreign_keys = ON;";
+    const char* sql_create_matrices =
         "CREATE TABLE IF NOT EXISTS matrices ("
-        "   name STRING PRIMARY KEY,"
+        "   name TEXT PRIMARY KEY,"
         "   rows INTEGER NOT NULL,"
         "   cols INTEGER NOT NULL,"
-        "   scalar_val REAL NOT NULL)"
+        "   scalar_val REAL NOT NULL);";
+    
+    const char* sql_create_matrix_vals =
         "CREATE TABLE IF NOT EXISTS matrix_vals ("
-        "   name STRING PRIMARY KEY,"
-        "   row INTEGER PRIMARY KEY"
-        "   col INTEGER PRIMARY KEY"
-        "   val REAL NOT NULL"
+        "   name TEXT,"
+        "   row INTEGER,"
+        "   col INTEGER,"
+        "   val REAL NOT NULL,"
+        "   PRIMARY KEY(name, row, col),"
         "   FOREIGN KEY(name) REFERENCES matrices(name));";
-
-    // Attempt to Execute table creation
-    char *err_msg = NULL;
-    rc = sqlite3_exec(db, sql_create, 0, 0, &err_msg);
-
-    // Return false if fails
-    if(rc != SQLITE_OK) {
-        fprintf(stderr, "SQL error: %s\n", err_msg);
-        sqlite3_free(err_msg);
-        sqlite3_close(db);
-        return false;
-    }
-
+    
+    // Attempt to execute schema creation
+    if(!exec_sql(pragma)) return false;
+    if(!exec_sql(sql_create_matrices)) return false;
+    if(!exec_sql(sql_create_matrix_vals)) return false;
+    
     return true;
 }
 
+bool connect() {
+    bool connected = true;
+
+    if(!db)
+        connected = init_data();
+
+    return connected;
+}
+
 bool repo_is_unique(char* name) {
-    if(!db) // Initialize database if not done yet
-        init_data();
+    if(!connect()) // Connect to database
+        return false; // Connection failed
 
     return true;
 }
 
 bool delete_matrix_vals(char* name) {
+    if(!connect()) // Connect to database
+        return false; // Connection failed
+
     return true;
 }
 
+
 bool insert_matrix_vals(char* name, Matrix* matrix) {
-    if(!db) // Initialize database if not done yet
-        init_data();
+    if(!connect()) // Connect to database
+        return false; // Connection failed
     
     // Attempt to delete existing values for matrix
     bool delete_result = delete_matrix_vals(name);
@@ -68,11 +104,8 @@ bool insert_matrix_vals(char* name, Matrix* matrix) {
     if(!delete_result)
         return false;
 
-    if(!db) // Initialize database if not done yet
-        init_data();
-
     // Create statement with placeholders
-    const char* sql = "INSERT OR REPLACE INTO matrix_vals (name, row, col, val) VALUES (? ? ? ?)";
+    const char* sql = "INSERT OR REPLACE INTO matrix_vals (name, row, col, val) VALUES (?, ?, ?, ?)";
     sqlite3_stmt* stmt;
     // Attempt to prepare statement
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
@@ -96,13 +129,9 @@ bool insert_matrix_vals(char* name, Matrix* matrix) {
         sqlite3_bind_int(stmt, 3, col);
         sqlite3_bind_double(stmt, 4, val);
 
-        // Attempt to execute insert
-        sqlite3_step(stmt);
-
         // Return false if insert fails
-        if(rc != SQLITE_DONE) {
+        if(!exec_prepared_stmt(stmt)) {
             fprintf(stderr, "Insert failed: %s\n", sqlite3_errmsg(db));
-            sqlite3_finalize(stmt);
             return false;
         }
 
@@ -118,18 +147,18 @@ bool insert_matrix_vals(char* name, Matrix* matrix) {
 }
 
 bool repo_matrix_save(char* name, Matrix* matrix) {
-    if(!db) // Initialize database if not done yet
-        init_data();
+    if(!connect()) // Connect to database
+        return false; // Connection failed
 
     // Create statement with placeholders
-    const char* sql = "INSERT OR REPLACE INTO matrices (name, rows, cols, scalar_val) VALUES (? ? ? ?)";
+    const char* sql = "INSERT OR REPLACE INTO matrices (name, rows, cols, scalar_val) VALUES (?, ?, ?, ?)";
     sqlite3_stmt* stmt;
 
     // Attempt to prepare statement
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
 
     // Return false if error
-    if (rc != SQLITE_OK) {
+    if(rc != SQLITE_OK) {
         fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
         return false;
     }
@@ -140,19 +169,98 @@ bool repo_matrix_save(char* name, Matrix* matrix) {
     sqlite3_bind_int(stmt, 3, matrix->cols);
     sqlite3_bind_double(stmt, 4, matrix->scalar_val);
 
-    // Attempt to execute the statement
-    rc = sqlite3_step(stmt);
-
-    // Return false if fails
-    if (rc != SQLITE_DONE) {
-        fprintf(stderr, "Insert failed: %s\n", sqlite3_errmsg(db));
-        sqlite3_finalize(stmt);
-        return false;
-    }
+    // Execute matrix insert
+    if(!exec_prepared_stmt(stmt))
+        return false; // Insert failed
 
     // Free memory allocated for statement
     sqlite3_finalize(stmt);
 
     // Return result of inserting matrix values
     return insert_matrix_vals(name, matrix);
+}
+
+
+bool load_matrix_vals(char* name, Matrix* matrix) {
+    if(!connect()) // Connect to database
+        return false; // Connection failed
+    
+    // Create query and statement
+    const char *sql = "SELECT row, col, val FROM matrix_vals WHERE name = ?;";
+    sqlite3_stmt* stmt;
+
+    // Attempt to prepare statement
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if(rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return false;
+    }
+
+    // Bind matrix name to prepared statement
+    sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt); // Execute query
+
+    // Iterate result rows
+    while((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        // Get element from query results
+        int row = sqlite3_column_int(stmt, 0);
+        int col = sqlite3_column_int(stmt, 1);
+        double val = sqlite3_column_double(stmt, 2);
+    
+        matrix_set(matrix, row, col, val); // Add to matrix
+    }
+
+    if(rc != SQLITE_DONE)
+        return false;
+
+    // Free allocated memory for statement
+    sqlite3_finalize(stmt);
+
+    return true;
+}
+
+Matrix* repo_matrix_load(char* name) {
+    if(!connect()) // Connect to database
+        return NULL; // Connection failed
+
+    // Create query and statement
+    const char *sql = "SELECT rows, cols, scalar_val FROM matrices WHERE name = ?;";
+    sqlite3_stmt* stmt;
+
+    // Attempt to prepare statement
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        return NULL;
+    }
+
+    // Bind matrix name to prepared statement
+    sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt); // Execute query
+
+    Matrix* matrix = NULL;
+
+    if(rc == SQLITE_ROW) { // Query successful
+        int row = sqlite3_column_int(stmt, 0);
+        int col = sqlite3_column_int(stmt, 1);
+        matrix = matrix_create(row, col);
+    } else if(rc == SQLITE_DONE) { // Matrix does not exist
+        printf("Matrix %s does not exist\n", name);
+        return NULL;
+    } else { // Query failed
+        fprintf(stderr, "Failed to execute query: %s\n", sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        
+        return NULL;
+    }
+
+    // Free allocated memory for statement
+    sqlite3_finalize(stmt);
+
+    if(!load_matrix_vals(name, matrix))
+        return NULL;
+
+    return matrix;
 }

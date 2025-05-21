@@ -1,12 +1,11 @@
 
-FROM alpine:latest
+FROM debian:bookworm-slim
 
-RUN apk add --no-cache \
+RUN apt update && apt install -y \
     gcc \
     make \
-    musl-dev \
-    sqlite \
-    sqlite-dev \
+    sqlite3 \
+    libsqlite3-dev \
     bash
 
 WORKDIR /workspace
