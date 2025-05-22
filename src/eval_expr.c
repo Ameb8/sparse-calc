@@ -284,8 +284,8 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
     int len;
     Token* expr = convert_rpn(infix_expr, infix_len, &len);
 
-    #ifdef DEBUG
-    printf("\nRPN expression:\n");
+    #ifdef DBG
+    printf("\nRPN expression (%d):\n", len);
     for(int i = 0; i <len; i++) 
     printf("Token type: %d\tToken value: %s\n", expr[i].type, expr[i].symbol);
     #endif
@@ -298,26 +298,39 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
 
     for(int i = 0; i < len; i++) { // Iterate through tokens
 
-        #ifdef DEBUG
+        #ifdef DBG
         printf("\nCurrent token (iteration %d): %d\t%s\n", i, expr[i].type, expr[i].symbol);
         printf("Operand stack:\n");
         for(int j = top; j >= 0; j--) {
             if(stack[j].matrix != NULL)
                 matrix_print(stack[j].matrix);
             else
-                printf("\nVal:\t%.2f\n", stack[i].val);
+                printf("\nVal:\t%.2f\n", stack[j].val);
 
         }
         #endif
 
         if(expr[i].type == TOKEN_MATRIX) { // Add matrix to stack
+            #ifdef DBG
+            printf("Matrix Token\n");
+            #endif
+
             //Matrix* matrix = get_matrix(expr[i].symbol);
             Matrix* matrix = rd_get_matrix(expr[i].symbol);
             stack[++top] = operand_create(matrix, 0);
         } else if(expr[i].type == TOKEN_NUMERIC) { // Add number to stack
+
+            #ifdef DBG // Reaches Here with '0' input
+            printf("numeric token recognized\n");
+            #endif
+
             stack[++top] = operand_create(NULL, expr[i].val);
         } else {
             if(expr[i].type == TOKEN_UN_OP) { // Apply unary operator
+                #ifdef DBG
+                printf("Unary Op Token\n");
+                #endif
+
                 if(top < 0) { // Missing operand
                     printf("Expression error, not enough operands\n");
                     return NULL;
@@ -328,6 +341,10 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
                 if(result.err) return NULL; // Error occurred while applying operator
                 stack[++top] = result; // Push result
             } else if(expr[i].type == TOKEN_BIN_OP) { // Apply binary operator
+                #ifdef DBG
+                printf("Binary Op Token\n");
+                #endif
+
                 if(top < 0) { // Missing operand
                     printf("Expression error, not enough operands\n");
                     return NULL;

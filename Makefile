@@ -1,11 +1,44 @@
-IMAGE_NAME = c-gcc-sqlite-alpine
+# Compiler and base flags
+CC = gcc
+BASE_CFLAGS = -Wall -Wextra
+LIBS = -lm -lsqlite3
 
-build:
-	docker build -t $(IMAGE_NAME) .
+SRC_DIR = src
+OUT_DIR = out
+SRC = $(wildcard $(SRC_DIR)/*.c)
+OBJ = $(SRC:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+TARGET = $(OUT_DIR)/sparse_calc_test
 
-run:
-	mkdir -p data
-	docker run --rm -it -v $(PWD):/app -v $(PWD)/data:/app/data $(IMAGE_NAME)
+# Default to production build
+BUILD ?= release
 
+ifeq ($(BUILD),debug)
+    CFLAGS = $(BASE_CFLAGS) -g -DDBG
+    TARGET := $(OUT_DIR)/sparse_calc_dbg
+else ifeq ($(BUILD),test)
+    CFLAGS = $(BASE_CFLAGS) -g -DTEST
+    TARGET := $(OUT_DIR)/sparse_calc_test
+else
+    CFLAGS = $(BASE_CFLAGS) -O2
+endif
+
+# Default target
+all: info $(TARGET)
+
+info:
+	@echo "Building mode: $(BUILD)"
+	@echo "Target: $(TARGET)"
+
+# Create output directory and link executable
+$(TARGET): $(OBJ)
+	mkdir -p $(OUT_DIR)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
+# Compile to object files
+$(OUT_DIR)/%.o: $(SRC_DIR)/%.c
+	mkdir -p $(OUT_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean all builds
 clean:
-	docker rmi $(IMAGE_NAME) || true
+	rm -rf $(OUT_DIR)

@@ -67,15 +67,13 @@ int parse_pattern(const char* str, int start, int* end) {
     i++;
     if(str[i] == '-') i++; // optional minus
 
-    if(!isdigit(str[i])) {
-        //printf("parse fail: expected digit at pos %d, got '%c'\n", i, str[i]);
+    if(!isdigit(str[i]))
         return 0;
-    }
 
-    while (isdigit(str[i])) i++;
+    while(isdigit(str[i])) 
+        i++;
     
     if(str[i] != ']')
-        //printf("parse fail: expected ']' after row index at pos %d, got '%c'\n", i, str[i]);
         return 0;
 
     i++;
@@ -144,6 +142,13 @@ char* replace_all(const char* input_str) {
     return output;
 }
 
+bool is_unary(Token last) {
+    if(last.type == TOKEN_MATRIX || last.type == TOKEN_NUMERIC || last.type == TOKEN_RPAREN)
+        return false;
+
+    return true;
+}
+
 // Parse string expression into tokens
 Token* parse_expr(char* expr, int* token_count) {
     int capacity = 16;
@@ -178,7 +183,11 @@ Token* parse_expr(char* expr, int* token_count) {
                 i++;
                 break;
             case '-': // Subtraction token
-                token.type = TOKEN_BIN_OP;
+                if(*token_count < 1 || is_unary(tokens[*token_count - 1]))
+                    token.type = TOKEN_UN_OP; // Unary minus
+                else
+                    token.type = TOKEN_BIN_OP; // Binary minus
+
                 token.symbol = strdup("-");
                 token.val = 0;
                 i++;
@@ -189,22 +198,34 @@ Token* parse_expr(char* expr, int* token_count) {
                 token.val = 1;
                 i++;
                 break;
-            case '\'': // Division token
+            case '\'': // Transpose token
                 token.type = TOKEN_UN_OP;
                 token.symbol = strdup("'");
                 token.val = 2;
                 i++;
                 break;
+            case '/': // Division token
+                token.type = TOKEN_BIN_OP;
+                token.symbol = strdup("/");
+                token.val = 1;
+                i++;
+                break;
+            case '^': // Exponent token
+                token.type = TOKEN_BIN_OP;
+                token.symbol = strdup("^");
+                token.val = 3;
+                i++;
+                break;
             case '(': // Opening parentheses
                 token.type = TOKEN_LPAREN;
                 token.symbol = strdup("(");
-                token.val = 3;
+                token.val = 4;
                 i++;
                 break;
             case ')': // Closing parentheses
                 token.type = TOKEN_RPAREN;
                 token.symbol = strdup(")");
-                token.val = 3;
+                token.val = 4;
                 i++;
                 break;
 
@@ -255,17 +276,23 @@ Token* parse_expr(char* expr, int* token_count) {
 
 Matrix* solve_expr(char* expr) {
     expr = replace_all(expr);
+
+    #ifdef DBG
+    printf("replacement successful\n");
+    #endif
+
     int num_tokens;
     Token* token_expr = parse_expr(expr, &num_tokens);
 
-    #ifdef DEBUG
-        printf("\n In-order token list:\n");
-        for(int i = 0; i < num_tokens; i++) 
-            printf("Token type: %d\tToken value: %s\n", token_expr[i].type, token_expr[i].symbol);
+    #ifdef DBG
+    printf("\n In-order token list:\n");
+    for(int i = 0; i < num_tokens; i++) 
+        printf("Token type: %d\tToken value: %s\n", token_expr[i].type, token_expr[i].symbol);
     #endif
 
     if(token_expr == NULL)
         return NULL;
 
+    // SEGFAULT HERE !!!
     return eval_expr(token_expr, num_tokens);
 }

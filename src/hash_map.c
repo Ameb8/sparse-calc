@@ -34,7 +34,7 @@ unsigned int hash(int row, int col) {
 void map_set(HashMap* map, int row, int col, double val) {
     unsigned int index = hash(row, col); // Get hash of (row, col)
 
-    if(map->table[index] == NULL && val != 0) { // Add used bucket to list if necessary
+    if(!map->table[index] && val != 0) { // Add used bucket to list if necessary
         list_prepend(map->used_buckets, index, 0, 0);
         map->table[index] = list_create();
     }
@@ -48,10 +48,12 @@ void map_set(HashMap* map, int row, int col, double val) {
             map->size++;
         }
     } else {
+        // Remove existing value
         list_remove_val(list, row, col);
-        if(val != 0) {
+
+        if(val != 0) { // Add new value
             list_prepend(list, row, col, val);
-        } else {
+        } else { // Remove current from list if new value zero
             map->size--;
             if(map->table[index]->head == NULL) 
                 free(list);

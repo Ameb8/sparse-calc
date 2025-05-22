@@ -6,7 +6,12 @@ RUN apt update && apt install -y \
     make \
     sqlite3 \
     libsqlite3-dev \
-    bash
+    bash \
+    gdb \
+    valgrind \
+    strace \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 
