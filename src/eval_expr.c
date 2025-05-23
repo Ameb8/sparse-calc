@@ -68,7 +68,6 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
                     if (top->type == TOKEN_BIN_OP || top->type == TOKEN_UN_OP) {
                         bool is_right = is_right_associative(tok);
                         bool is_left = is_left_associative(tok) || tok->type == TOKEN_BIN_OP;
-
                         if ((is_left && top->val >= tok->val) ||
                             (is_right && top->val > tok->val)) {
                             output[output_pos++] = *top;

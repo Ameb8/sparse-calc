@@ -46,10 +46,6 @@ Command commands[] = {
     {"drop", drop_matrix},
     {"delete", delete_matrix}};
 
-char **split_input(const char *input, int *count)
-{
-    return NULL;
-}
 
 bool create_matrix(char *name)
 {
@@ -486,8 +482,17 @@ bool handle_input(char *input) {
             return false;
         }
 
+        #ifdef DBG
+        printf("result = (%d x %d)\n", matrix->rows, matrix->cols);
+        #endif
+
         matrix_set(matrix, row, col, matrix_get(result, 0, 0));
         
+        #ifdef DBG
+        printf("result = (%d x %d)\n", matrix->rows, matrix->cols);
+        matrix_print(matrix);
+        #endif
+
         return true;
     }
 

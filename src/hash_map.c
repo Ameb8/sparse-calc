@@ -55,8 +55,10 @@ void map_set(HashMap* map, int row, int col, double val) {
             list_prepend(list, row, col, val);
         } else { // Remove current from list if new value zero
             map->size--;
-            if(map->table[index]->head == NULL) 
-                free(list);
+            if(map->table[index]->head == NULL) {
+                free(map->table[index]);
+                map->table[index] = NULL;
+            }
         }
     }
 }
