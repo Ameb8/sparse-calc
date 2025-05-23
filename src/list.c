@@ -64,6 +64,9 @@ void list_prepend(List* list, int row, int col, double val) {
 }
 
 double list_get_val(List* list, int row, int col) {
+    if(!list || !list->head)
+        return 0;
+
     Node* temp = list->head;
 
     while(temp != NULL) {
