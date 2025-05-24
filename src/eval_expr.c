@@ -199,6 +199,48 @@ Operand handle_sub(Operand a, Operand b) {
     return operand_create(result, 0);
 }
 
+Operand handle_exp(Operand a, Operand b) {
+    if(b.matrix) // Invalid, power is matrix
+        return operand_error();
+    if(a.matrix) { // Base is matrix
+        if(a.matrix->rows != a.matrix->cols)
+            return operand_error();
+
+        // Check if exponent is integer
+        long long int_val = (long long)b.val;
+        if(b.val != (double)int_val) // Only matrix to the power of integers is supported
+            return operand_error();
+
+        if(b.val < 0) // Matrices raised to negative power not supported
+            return operand_error();
+
+        if(b.val == 0) // Return identity matrix if power is 0
+            return operand_create(matrix_identity(a.matrix->rows, a.matrix->cols), 0);
+
+        // Raise matrix to positive integer power
+        Matrix* res = matrix_scalar_add(a.matrix, 0); // Matrix to store result
+        for(int i = 1; i < b.val; i++) {
+            res = matrix_mult(res, a.matrix);
+        }       
+        
+        return operand_create(res, 0);
+    } else { // Both operands numeric
+        return operand_create(NULL, pow(a.val, b.val));
+    }
+}
+
+Operand handle_div(Operand a, Operand b) {
+    if(b.matrix) { // Cannot divide by matrix
+        return operand_error();
+    } if(a.matrix) { // Divide matrix by scalar
+        Matrix* res = matrix_scalar_mult(a.matrix, 1 / b.val);
+        return operand_create(res, 0);
+    } else { // Numeric division
+        return operand_create(NULL, a.val / b.val);
+    }
+
+}
+
 Operand handle_numeric(char* op, Operand a, Operand b) {
     if(a.matrix == NULL || b.matrix == NULL)
         return operand_error();
@@ -218,27 +260,17 @@ Operand apply_bin_op(char* op, Operand a, Operand b) {
         return handle_add(a, b);
     if(!strcmp(op, "-"))
         return handle_sub(b, a);
+    if(!strcmp(op, "^"))
+        return handle_exp(b, a);
+    if(!strcmp(op, "/"))
+        return handle_div(b, a);
     
-    return handle_numeric(op, a, b);
-
+    return operand_error();
+    //return handle_numeric(op, a, b);
 }
 
 Operand apply_un_op(char* op, Operand a) {
-    #ifdef DEBUG
-    printf("\napply_un_op() params:\n");
-    printf("op: %s\n", op);
-    if(a.matrix == NULL)
-        printf("values: %.2f\n", a.val);
-    else
-        matrix_print(a.matrix);
-    #endif
-
     if(!strcmp(op, "-")) { // Handle unary negative
-
-        #ifdef DEBUG
-        printf("\n Unary minus operator selected\n");
-        #endif
-
         if(a.matrix == NULL) {
             return operand_create(NULL, a.val * -1);
         } else {
@@ -246,35 +278,14 @@ Operand apply_un_op(char* op, Operand a) {
             return operand_create(result, 0);
         }
     } else if(!strcmp(op, "'")) { // Handle Transpose
-
-        #ifdef DEBUG
-        printf("\n Transpose operator selected\n");
-        #endif
-
         if(a.matrix == NULL) {
             return operand_create(NULL, a.val);
         } else {
-
-            #ifdef DEBUG
-            printf("\n Transpose Initiated\n");
-            #endif
-
-            // ERROR HERE !!! ********************************************
             Matrix* result = matrix_transpose(a.matrix);
-
-            #ifdef DEBUG
-            printf("\nTranspose result:\n");
-            matrix_print(result);
-            #endif
 
             return operand_create(result, 0);
         }
     } else {
-
-        #ifdef DEBUG
-        printf("\n Unary operator not recognized\n");
-        #endif
-
         return operand_error();
     }
 }

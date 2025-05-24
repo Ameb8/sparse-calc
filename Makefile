@@ -7,7 +7,6 @@ SRC_DIR = src
 OUT_DIR = out
 SRC = $(wildcard $(SRC_DIR)/*.c)
 OBJ = $(SRC:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
-TARGET = $(OUT_DIR)/sparse_calc_test
 
 # Default to production build
 BUILD ?= release
@@ -20,6 +19,7 @@ else ifeq ($(BUILD),test)
     TARGET := $(OUT_DIR)/sparse_calc_test
 else
     CFLAGS = $(BASE_CFLAGS) -O2
+	TARGET := $(OUT_DIR)/sparse_calc
 endif
 
 # Default target

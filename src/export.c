@@ -103,7 +103,7 @@ int count_columns(const char* filename) {
     fclose(file);
     return cols;
 }
-
+/*
 Matrix* import_csv(const char* filename) {
     int rows = count_rows(filename);
     int cols = count_columns(filename);
@@ -138,6 +138,73 @@ Matrix* import_csv(const char* filename) {
         } else if(c == EOF) {
             break;
         }
+    }
+
+    fclose(file);
+    return matrix;
+}
+*/
+
+
+
+
+Matrix* import_csv(const char* filename) {
+    int rows = count_rows(filename);
+    int cols = count_columns(filename);
+    if(rows < 1 || cols < 1) 
+        return NULL;
+
+    FILE* file = fopen(filename, "r");
+    if(!file) {
+        perror("Failed to open file");
+        return NULL;
+    }
+
+    Matrix* matrix = matrix_create(rows, cols);
+    if(!matrix) {
+        fclose(file);
+        return NULL;
+    }
+
+    char number_buf[64]; // more than enough for any double
+    int buf_index = 0;
+    int row = 0, col = 0;
+    int c;
+
+    while((c = fgetc(file)) != EOF) {
+        if((isdigit(c) || c == '.' || c == '-' || c == 'e' || c == 'E' || c == '+') && buf_index < (int)sizeof(number_buf) - 1) {
+            number_buf[buf_index++] = (char)c;
+        } else if(c == ',' || c == '\n' || c == '\r' || c == EOF) {
+            if (buf_index > 0) {
+                number_buf[buf_index] = '\0';
+                double val = strtod(number_buf, NULL);
+                if(val != 0.0) 
+                    matrix_set(matrix, row, col, val);
+                buf_index = 0;
+                col++;
+            }
+
+            if(c == '\n' || c == '\r') {
+                if(col != cols) {
+                    fprintf(stderr, "Warning: inconsistent column count at row %d (got %d, expected %d)\n", row, col, cols);
+                }
+                row++;
+                col = 0;
+                if(c == '\r') {
+                    int next = fgetc(file);
+                    if(next != '\n' && next != EOF) 
+                        ungetc(next, file);
+                }
+            }
+        }
+    }
+
+    // Handle last value if file doesn't end with newline
+    if(buf_index > 0 && row < rows && col < cols) {
+        number_buf[buf_index] = '\0';
+        double val = strtod(number_buf, NULL);
+        if(val != 0.0)
+            matrix_set(matrix, row, col, val);
     }
 
     fclose(file);

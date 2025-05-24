@@ -8,6 +8,9 @@
 #define MATRIX_REGISTRY "matrix_registry.dat"
 
 Matrix* matrix_create(int rows, int cols) {
+    if(rows < 1 || cols < 1)
+        return NULL;
+
     // Allocate memory for a new Matrix
     Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
     if (matrix == NULL) {
@@ -240,6 +243,20 @@ Matrix* matrix_mult(Matrix* a, Matrix* b) {
         result->scalar_val = a->scalar_val * b->scalar_val * a->cols;
         
 
+    return result;
+}
+
+Matrix* matrix_identity(int rows, int cols) {
+    Matrix* result = matrix_create(rows, cols);
+
+    // Ensure valid matrix dimensions
+    if(rows != cols || rows < 1 || cols < 1)
+        return NULL;
+
+    // Set diagonal vals to 1
+    for(int i = 0; i < rows; i++)
+        matrix_set(result, i, i, 1.0);
+    
     return result;
 }
 
