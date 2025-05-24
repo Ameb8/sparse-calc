@@ -7,7 +7,6 @@
 
 sqlite3* db = NULL;
 
-
 bool exec_sql(const char *sql) {
     char *err_msg = NULL;
     int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
@@ -15,7 +14,6 @@ bool exec_sql(const char *sql) {
     if (rc != SQLITE_OK) {
         fprintf(stderr, "SQL error: %s\n", err_msg);
         sqlite3_free(err_msg);
-        sqlite3_close(db);
         return false;
     }
     return true;
@@ -59,7 +57,7 @@ bool init_data() {
         "   col INTEGER,"
         "   val REAL NOT NULL,"
         "   PRIMARY KEY(name, row, col),"
-        "   FOREIGN KEY(name) REFERENCES matrices(name) ON DELETE CASCADE;";
+        "   FOREIGN KEY(name) REFERENCES matrices(name) ON DELETE CASCADE);";
     
     // Attempt to execute schema creation
     if(!exec_sql(pragma)) return false;
@@ -150,7 +148,7 @@ bool repo_matrix_delete(char* name) {
         return false; // Connection failed
 
     // Create query and statement
-    const char *sql = "DELETE FROM matrices WHERE name = ? LIMIT 1;";
+    const char *sql = "DELETE FROM matrices WHERE name = ?;";
     sqlite3_stmt *stmt;
 
     // Attempt to prepare statement
@@ -253,7 +251,7 @@ Matrix* repo_matrix_load(char* name) {
         return NULL; // Connection failed
 
     // Create query and statement
-    const char *sql = "SELECT rows, cols, scalar_val FROM matrices WHERE name = ?;";
+    const char *sql = "SELECT rows, cols, scalar_val FROM matrices WHERE name = ? LIMIT 1;";
     sqlite3_stmt* stmt;
 
     // Attempt to prepare statement

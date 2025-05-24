@@ -1,1 +1,4 @@
 out/
+*.txt
+*.csv
+*.sqlite

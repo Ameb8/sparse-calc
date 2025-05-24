@@ -13,10 +13,6 @@
 #define MAX_INPUT_LENGTH 256
 
 void run_app() {
-    Matrix* matrix = matrix_create(10, 10);
-    matrix_free(matrix);
-    
-
     char input[MAX_INPUT_LENGTH];
 
     while (1) {

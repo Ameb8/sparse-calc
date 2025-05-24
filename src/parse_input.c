@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <time.h>
 #include "../include/parse_input.h"
 #include "../include/matrix.h"
 #include "../include/eval_expr.h"
@@ -10,9 +11,11 @@
 #include "../include/matrix_cli.h"
 #include "../include/runtime_data.h"
 #include "../include/repository.h"
+#include "../include/export.h"
+
 
 typedef bool (*CommandFn)(char *input);
-#define NUM_COMMANDS 11
+#define NUM_COMMANDS 14
 #define MAX_MATRICES 200
 
 typedef struct
@@ -21,17 +24,20 @@ typedef struct
     CommandFn fn;
 } Command;
 
-bool list_matrices(char *input);
-bool show_matrix(char *input);
-bool help(char *input);
-bool set_matrix(char *input);
-bool clear_terminal(char *input);
-bool list_saved(char *input);
-bool save_as_matrix(char *input);
-bool save_matrix(char *input);
-bool load_matrix(char *input);
-bool drop_matrix(char *input);
-bool delete_matrix(char *input);
+bool list_matrices(char* input);
+bool show_matrix(char* input);
+bool help(char* input);
+bool set_matrix(char* input);
+bool clear_terminal(char* input);
+bool list_saved(char* input);
+bool save_as_matrix(char* input);
+bool save_matrix(char* input);
+bool load_matrix(char* input);
+bool drop_matrix(char* input);
+bool delete_matrix(char* input);
+bool exec_script(char* input);
+bool export(char* input);
+bool import(char* input);
 
 Command commands[] = {
     {"matrix", set_matrix},
@@ -44,7 +50,11 @@ Command commands[] = {
     {"save", save_matrix},
     {"load", load_matrix},
     {"drop", drop_matrix},
-    {"delete", delete_matrix}};
+    {"delete", delete_matrix},
+    {"exec", exec_script},
+    {"export", export},
+    {"import", import}
+};
 
 
 bool create_matrix(char *name)
@@ -326,6 +336,95 @@ bool delete_matrix(char *input)
     return true;
 }
 
+
+bool exec_script(char* input) {
+    int num_args = 0;
+    char **args = get_args(input, &num_args);
+
+    #ifdef DBG
+    #include <unistd.h>
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    printf("Current working dir: %s\n", cwd);
+    printf("Num args: %d\n", num_args);
+    for(int i = 0; i < num_args; i++)
+        printf("(%d: %s),\n", i, args[i]);
+    #endif
+
+    // Check if arguments valid
+    if(!args || num_args == 0)
+    {
+        printf("Error: No Filepath provided\n");
+        return false;
+    }
+
+    bool has_err = false;
+
+    for(int i = 0; i < num_args; i++) {
+        if(!execute_file(trim(args[i])))
+            has_err = false;
+    }
+    
+    return has_err;
+}
+
+
+bool export(char* input) {
+    int num_args = 0;
+    char **args = get_args(input, &num_args);
+
+    // Check if arguments valid
+    if(!args || num_args == 0)
+    {
+        printf("Error: No Filepath provided\n");
+        return false;
+    }
+
+    for(int i = 0; i < num_args; i++) {
+        Matrix* saving = rd_get_matrix(trim(args[i]));
+
+        if(!saving) // Matrix name not valid
+            printf("Matrix %s does not exist\n", trim(args[i]));
+        else
+            export_csv(saving, trim(args[i]));
+    }
+
+    return true;
+}
+
+
+bool import(char* input) {
+    int num_args = 0;
+    char **args = get_args(input, &num_args);
+
+    // Check if arguments valid
+    if(!args || num_args == 0)
+    {
+        printf("Error: No Filepath provided\n");
+        return false;
+    }
+
+    for(int i = 0; i < num_args; i++) {
+        Matrix* matrix = import_csv(trim(args[i]));
+        
+        if(!matrix)
+            printf("Matrix could not be loaded from %s\n", trim(args[i]));
+        else {
+            char* save_name = NULL;
+
+            if(trim(args[i + 1][0]) == '-') // Matrix name specified
+                save_name = trim(args[++i] + 1);
+            else
+                save_name = trim(args[i]);
+            
+            rd_save_matrix(save_name, matrix);
+        }
+    }
+
+    return true;
+}
+
+
 bool starts_with(const char *input, const char *command) {
     // Check if str2 is longer than str1
     if (strlen(command) > strlen(input))
@@ -344,6 +443,7 @@ bool starts_with(const char *input, const char *command) {
     return true; // Characters match, return true
 }
 
+
 bool find_command(char *input)
 {
     for (int i = 0; i < NUM_COMMANDS; i++)
@@ -355,7 +455,7 @@ bool find_command(char *input)
     return false;
 }
 
-char **split_expr(const char *str, int *count) {
+char** split_expr(const char *str, int *count) {
     if(!str || !count)
         return NULL;
 
