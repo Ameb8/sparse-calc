@@ -261,6 +261,107 @@ Matrix* matrix_identity(int rows, int cols) {
 }
 
 
+void matrix_swap_rows(Matrix* matrix, int row1, int row2) {
+    if (!matrix || row1 == row2 || row1 < 0 || row2 < 0 || row1 >= matrix->rows || row2 >= matrix->rows) {
+        return; // Invalid input or no-op
+    }
+
+    for (int col = 0; col < matrix->cols; col++) {
+        double val1 = matrix_get(matrix, row1, col);
+        double val2 = matrix_get(matrix, row2, col);
+
+        matrix_set(matrix, row1, col, val2);
+        matrix_set(matrix, row2, col, val1);
+    }
+}
+
+
+double matrix_determinant(Matrix* a) {
+    if(a->rows != a->cols)
+        return -DBL_MAX; // Matrix must be square
+
+    int n = a->rows;
+
+    // Initialize matrices as p * a = l * u
+    Matrix* l = matrix_create(a->rows, a->cols); // Zero matrix
+    Matrix* u = matrix_scalar_add(a, 0); // Copy of a
+
+    // Create permutation vector p (identity initially)
+    int* p = (int*)malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+        p[i] = i;
+    }
+
+    int sign = 1;  // Track parity of row swaps
+
+    for (int k = 0; k < n; k++) {
+        // Partial pivoting: find pivot row r in column k starting at k
+        int r = k;
+        double max_val = fabs(matrix_get(u, k, k));
+        for (int i = k + 1; i < n; i++) {
+            double val = fabs(matrix_get(u, i, k));
+            if (val > max_val) {
+                max_val = val;
+                r = i;
+            }
+        }
+
+        if (r != k) {
+            // Swap rows r and k in U
+            matrix_swap_rows(u, k, r);
+
+            // Swap rows in L for columns < k
+            for (int col = 0; col < k; col++) {
+                double temp = matrix_get(l, k, col);
+                matrix_set(l, k, col, matrix_get(l, r, col));
+                matrix_set(l, r, col, temp);
+            }
+
+            // Swap in permutation vector
+            int temp = p[k];
+            p[k] = p[r];
+            p[r] = temp;
+
+            sign = -sign;  // flip determinant sign
+        }
+
+        double pivot = matrix_get(u, k, k);
+        if(fabs(pivot) < 1e-15) {
+            // Singular matrix => determinant is zero
+            free(p);
+            //matrix_destroy(l);
+            //matrix_destroy(u);
+            return 0.0;
+        }
+
+        // Elimination below pivot
+        for(int i = k + 1; i < n; i++) {
+            double multiplier = matrix_get(u, i, k) / pivot;
+            matrix_set(l, i, k, multiplier);
+            for (int j = k; j < n; j++) {
+                double val = matrix_get(u, i, j) - multiplier * matrix_get(u, k, j);
+                matrix_set(u, i, j, val);
+            }
+        }
+
+        matrix_set(l, k, k, 1.0);  // L diagonal = 1
+    }
+
+    // Compute determinant = sign * product of U diagonal
+    double det = (double)sign;
+    for(int i = 0; i < n; i++) {
+        det *= matrix_get(u, i, i);
+    }
+
+    // Cleanup
+    free(p);
+    //matrix_destroy(l);
+    //matrix_destroy(u);
+
+    return det;
+}
+
+
 // Set value in matrix
 void matrix_set(Matrix* matrix, int row, int col, double val) {
     if(matrix->mult_vals != NULL) 

@@ -182,6 +182,7 @@ Token* parse_expr(char* expr, int* token_count) {
                 token.val = 0;
                 i++;
                 break;
+                
             case '-': // Subtraction token
                 if(*token_count < 1 || is_unary(tokens[*token_count - 1]))
                     token.type = TOKEN_UN_OP; // Unary minus
@@ -192,40 +193,60 @@ Token* parse_expr(char* expr, int* token_count) {
                 token.val = 0;
                 i++;
                 break;
+
             case '*': // Multiplication token
                 token.type = TOKEN_BIN_OP;
                 token.symbol = strdup("*");
                 token.val = 1;
                 i++;
                 break;
+
             case '\'': // Transpose token
                 token.type = TOKEN_UN_OP;
                 token.symbol = strdup("'");
                 token.val = 2;
                 i++;
                 break;
+
             case '/': // Division token
                 token.type = TOKEN_BIN_OP;
                 token.symbol = strdup("/");
                 token.val = 1;
                 i++;
                 break;
+
             case '^': // Exponent token
                 token.type = TOKEN_BIN_OP;
                 token.symbol = strdup("^");
                 token.val = 3;
                 i++;
                 break;
+
             case '(': // Opening parentheses
                 token.type = TOKEN_LPAREN;
                 token.symbol = strdup("(");
                 token.val = 4;
                 i++;
                 break;
+           
             case ')': // Closing parentheses
                 token.type = TOKEN_RPAREN;
                 token.symbol = strdup(")");
                 token.val = 4;
+                i++;
+                break;
+
+            case '[': // Opening determinant
+                token.type = TOKEN_DET_L;
+                token.symbol = strdup("[");
+                token.val = 3;
+                i++;
+                break;
+
+            case ']': // Closing determinant
+                token.type = TOKEN_DET_R;
+                token.symbol = strdup("]");
+                token.val = 3;
                 i++;
                 break;
 

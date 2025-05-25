@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
+#include <float.h>
 #include "../include/eval_expr.h"
 #include "../include/runtime_data.h"
 
@@ -98,6 +99,28 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
                 }
                 break;
 
+            case TOKEN_DET_L:
+                op_stack[++op_top] = tok;
+                break;
+
+            case TOKEN_DET_R:
+                while (op_top >= 0 && op_stack[op_top]->type != TOKEN_DET_L)
+                    output[output_pos++] = *op_stack[op_top--];
+                
+                if (op_top >= 0 && op_stack[op_top]->type == TOKEN_DET_L) {
+                    op_top--; // discard DET_L
+                    // Now add the 'det' unary operator token to output
+                    Token det_token;
+                    det_token.type = TOKEN_UN_OP;
+                    det_token.symbol = "det";
+                    det_token.val = 0; // Optional: default val if needed
+                    output[output_pos++] = det_token;
+                } else {
+                    fprintf(stderr, "Mismatched determinant delimiters\n");
+                    return NULL;
+                }
+                break;
+
             default:
                 break;
         }
@@ -150,51 +173,18 @@ Operand handle_add(Operand a, Operand b) {
 }
 
 Operand handle_sub(Operand a, Operand b) {
-    #ifdef DEBUG
-    printf("SUBTRACTION:\n");
-    if(!a.matrix) {
-        printf("Operand 1: %.2f\n", a.val);
-    } else {
-        printf("Operand 1:\n");
-        matrix_print(a.matrix);
-    }
-    if(!b.matrix) {
-        printf("Operand 2: %.2f\n", b.val);
-    } else {
-        printf("Operand 2:\n");
-        matrix_print(b.matrix);
-    }
-    #endif
-
     Matrix* result;
     
     if(a.matrix != NULL && b.matrix != NULL) // Matrix subtraction
         result = matrix_sub(a.matrix, b.matrix);
     else if(a.matrix != NULL) { // Scalar subtraction
-        #ifdef DEBUG
-        printf("scalar sub attempted:\n");
-        #endif
-
         result = matrix_scalar_add(a.matrix, b.val * -1);
-    //} else if(b.matrix != NULL) {// Scalar subtraction
-        //result = matrix_scalar_subr(b.matrix, a.val * -1);
-        //#ifdef DEBUG
-        //printf("Scalar R sub attempted\n");
-        //#endif
-    } else {// Numeric subtraction
-        #ifdef DEBUG
-        printf("Numeric sub attempted\n");
-        #endif
-
+    } else { // Numeric subtraction
         return operand_create(NULL, a.val - b.val);
     }
 
     if(!result)
         return operand_error();
-
-    #ifdef DEBUG
-    matrix_print(result);
-    #endif
 
     return operand_create(result, 0);
 }
@@ -271,20 +261,36 @@ Operand apply_bin_op(char* op, Operand a, Operand b) {
 
 Operand apply_un_op(char* op, Operand a) {
     if(!strcmp(op, "-")) { // Handle unary negative
-        if(a.matrix == NULL) {
+        if(!a.matrix)
             return operand_create(NULL, a.val * -1);
-        } else {
-            Matrix* result = matrix_scalar_mult(a.matrix, -1);
-            return operand_create(result, 0);
-        }
-    } else if(!strcmp(op, "'")) { // Handle Transpose
-        if(a.matrix == NULL) {
-            return operand_create(NULL, a.val);
-        } else {
-            Matrix* result = matrix_transpose(a.matrix);
 
-            return operand_create(result, 0);
-        }
+        Matrix* result = matrix_scalar_mult(a.matrix, -1);
+        return operand_create(result, 0);
+    } else if(!strcmp(op, "'")) { // Handle Transpose
+        if(!a.matrix) // Transpose of scalar is itself
+            return operand_create(NULL, a.val);
+
+        // Calculate transpose
+        Matrix* result = matrix_transpose(a.matrix);
+        return operand_create(result, 0);
+    } else if(!strcmp(op, "det")) { // Handle determinant
+        #ifdef DBG
+        printf("Determ. recognized\n");
+        #endif
+
+        if(!a.matrix) // Cannot take determinant of scalar
+            return operand_error();
+
+        double result = matrix_determinant(a.matrix); // Calculate determinant
+
+        #ifdef DBG
+        printf("Determinant = %f\n", result);
+        #endif
+
+        if(result == -DBL_MAX) // Matrix has no determinant
+            return operand_error();
+        
+        return operand_create(NULL, result);
     } else {
         return operand_error();
     }

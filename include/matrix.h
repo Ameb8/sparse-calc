@@ -12,7 +12,6 @@ typedef struct {
     double scalar_val;
 } Matrix;
 
-
 Matrix* matrix_create(int rows, int cols);
 int matrix_size(Matrix* matrix);
 Matrix* matrix_add(Matrix* a, Matrix* b);
@@ -28,8 +27,7 @@ void matrix_print(Matrix* matrix);
 Matrix* matrix_copy(Matrix* matrix);
 void matrix_free(Matrix* matrix);
 Matrix* scalar_subr(Matrix* matrix, double val);
+double matrix_determinant(Matrix* a);
 Matrix* matrix_identity(int rows, int cols);
-
-
 
 #endif
