@@ -158,6 +158,7 @@ bool clear_terminal(char *input)
 bool list_saved(char *input)
 {
     repo_list();
+    return true;
 }
 
 bool save_matrix_repo(char *name, char *save_name)
@@ -515,16 +516,12 @@ bool save_result(Matrix *result, char *target) {
 }
 
 bool handle_input(char *input) {
-    if (find_command(input))
+    if(find_command(input))
         return true;
-
-    #ifdef DBG
-    printf("find_command not executed()\n");
-    #endif
 
     int num_args = 0;
     char **expr = split_expr(input, &num_args);
-    if (!expr || num_args != 2) {
+    if(!expr || num_args != 2) {
         printf("Error: Invalid expression\n");
         return false;
     }
@@ -536,8 +533,8 @@ bool handle_input(char *input) {
     #endif
 
     int end, row, col;
-    char *name;
-    Matrix *matrix = NULL; // Will contain valid Matrix if index is being assigned
+    char* name;
+    Matrix* matrix = NULL; // Will contain valid Matrix if index is being assigned
 
     // Check if matrix index is being assigned
     if(parse_pattern(expr[0], 0, &end) && expr[0][end] == '\0') {
@@ -556,43 +553,30 @@ bool handle_input(char *input) {
             matrix = rd_get_matrix(name);
     }
 
-    // SEGFAULT IN HERE WHEN EXPR RESULT IS 1!
-    Matrix *result = solve_expr(expr[1]);
-
-    #ifdef DBG
-    printf("Result:\n");
-    matrix_print(result);
-    printf("Matrix:\n");
-    matrix_print(matrix);
-    #endif
+    char* err_msg = NULL;
+    Matrix *result = solve_expr(expr[1], &err_msg);
+    
+    if(err_msg) {
+        printf("Expression could not be Evaluated: %s", err_msg);
+        return false;
+    }
 
     if(!result)
         return false;
 
     if(matrix) {
-        if (!result || result->rows != 1 || result->cols != 1)
-        {
+        if (!result || result->rows != 1 || result->cols != 1) {
             printf("Error: Expression must produce number to assign to matrix index\n");
             return false;
         }
 
-        if (row >= matrix->rows || row < 0 || col >= matrix->cols || col < 0)
-        {
+        if (row >= matrix->rows || row < 0 || col >= matrix->cols || col < 0) {
             printf("Error: Indices [%d][%d] out of bounds for matrix %s\n", row, col, name);
             return false;
         }
 
-        #ifdef DBG
-        printf("result = (%d x %d)\n", matrix->rows, matrix->cols);
-        #endif
-
         matrix_set(matrix, row, col, matrix_get(result, 0, 0));
-        
-        #ifdef DBG
-        printf("result = (%d x %d)\n", matrix->rows, matrix->cols);
-        matrix_print(matrix);
-        #endif
-
+   
         return true;
     }
 

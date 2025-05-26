@@ -120,17 +120,13 @@ char* replace_all(const char* input_str) {
                 return NULL;
             }
 
-
-            #ifdef DEBUG
-            printf("Replacing '%s' with '%s'\n", match, replacement);
-            #endif
-
             strcat(output, replacement); // Replace in string
 
+            // Deallocate memory
             free(match);
             free(replacement);
 
-            i = end;
+            i = end; // Update char pointer
         } else { // Not indexed matrix
             int len_out = strlen(output);
             output[len_out] = input_str[i];
@@ -150,7 +146,7 @@ bool is_unary(Token last) {
 }
 
 // Parse string expression into tokens
-Token* parse_expr(char* expr, int* token_count) {
+Token* parse_expr(char* expr, int* token_count, char** err_msg) {
     int capacity = 16;
     Token* tokens = malloc(sizeof(Token) * capacity);
     *token_count = 0;
@@ -182,7 +178,7 @@ Token* parse_expr(char* expr, int* token_count) {
                 token.val = 0;
                 i++;
                 break;
-                
+
             case '-': // Subtraction token
                 if(*token_count < 1 || is_unary(tokens[*token_count - 1]))
                     token.type = TOKEN_UN_OP; // Unary minus
@@ -277,14 +273,12 @@ Token* parse_expr(char* expr, int* token_count) {
                         token.symbol = num_str;
                         token.val = strtod(num_str, NULL); 
                     } else { // Unrecognized token
+                        *err_msg = "Scalar can have Only One Decimal Point\n";
                         return NULL;
-                        //token.type = TOKEN_INVALID;
-                        //token.symbol = num_str;
+
                     }
                 } else { // Unrecognized token
-                    //token.type = TOKEN_INVALID;
-                    //token.symbol = strndup(&c, 1);
-                    //i++;
+                    *err_msg = "Unrecognized characters\n";
                     return NULL;
                 }
         }
@@ -295,7 +289,7 @@ Token* parse_expr(char* expr, int* token_count) {
     return tokens;
 }
 
-Matrix* solve_expr(char* expr) {
+Matrix* solve_expr(char* expr, char** err_msg) {
     expr = replace_all(expr);
 
     #ifdef DBG
@@ -303,7 +297,7 @@ Matrix* solve_expr(char* expr) {
     #endif
 
     int num_tokens;
-    Token* token_expr = parse_expr(expr, &num_tokens);
+    Token* token_expr = parse_expr(expr, &num_tokens, err_msg);
 
     #ifdef DBG
     printf("\n In-order token list:\n");
@@ -314,6 +308,6 @@ Matrix* solve_expr(char* expr) {
     if(token_expr == NULL)
         return NULL;
 
-    // SEGFAULT HERE !!!
-    return eval_expr(token_expr, num_tokens);
+
+    return eval_expr(token_expr, err_msg, num_tokens);
 }

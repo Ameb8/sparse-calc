@@ -63,7 +63,7 @@ void list_append(List* list, int row, int col, double val) {
 }
 
 
-// Prepend entry to beggining of list
+// Prepend entry to begining of list
 void list_prepend(List* list, int row, int col, double val) {
     Node* node = node_create(row, col, val); // Create new node
     list->size++; // Increment list size

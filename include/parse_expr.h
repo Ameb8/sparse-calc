@@ -3,7 +3,7 @@
 
 #include "matrix.h"
 
-Matrix* solve_expr(char* expr);
+Matrix* solve_expr(char* expr, char** err_msg);
 int parse_pattern(const char* str, int start, int* end);
 void get_matrix_index(const char* input, char** name, int* row, int* col);
 

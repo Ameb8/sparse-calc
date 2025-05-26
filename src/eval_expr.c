@@ -8,24 +8,50 @@
 #include "../include/runtime_data.h"
 
 
+typedef enum {
+    SCALAR,
+    MATRIX,
+    ERROR
+} OperandType;
+
+
 typedef struct {
-    double val;
-    Matrix* matrix;
-    bool err;
+    OperandType type;
+
+    union {
+        double val;
+        Matrix* matrix;
+        char* err;
+    } data;
 } Operand;
 
-Operand operand_create(Matrix* matrix, double val) {
+
+// Create operand to hold scalar
+Operand operand_scalar(double val) {
     Operand op;
-    op.matrix = matrix;
-    op.val = val;
-    op.err = false;
+    op.type = SCALAR;
+    op.data.val = val;
 
     return op;
 }
 
-Operand operand_error() {
+
+// Create operand to hold matrix
+Operand operand_matrix(Matrix* matrix) {
     Operand op;
-    op.err = true;
+    op.type = MATRIX;
+    op.data.matrix = matrix;
+
+    return op;
+}
+
+
+// Create operand to indicate error
+Operand operand_error(char* err_msg) {
+    Operand op;
+    op.type = ERROR;
+    op.data.err = err_msg;
+
     return op;
 }
 
@@ -39,10 +65,11 @@ bool is_left_associative(Token* tok) {
 }
 
 // Convert infix tokenized expression to RPN
-Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
+Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len, char** err_msg) {
     Token* output = malloc(sizeof(Token) * num_tokens); // Holds output rpn list
     Token** op_stack = malloc(sizeof(Token*) * num_tokens); // Operator stack
-    int output_pos = 0, op_top = -1;
+    int output_pos = 0;
+    int op_top = -1;
 
     for(int i = 0; i < num_tokens; i++) { // Iterate through infix token list
         Token* tok = &tokens[i];
@@ -89,7 +116,7 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
                 if(op_top >= 0 && op_stack[op_top]->type == TOKEN_LPAREN) {
                     op_top--; // discard left parentheses
                 } else { // Opening parentheses missing
-                    fprintf(stderr, "Mismatched parentheses\n");
+                    *err_msg = "Missing Opening Parentheses\n";
                     return NULL;
                 }
                 break;
@@ -113,7 +140,7 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
                     det_token.val = 0;
                     output[output_pos++] = det_token;
                 } else { // Missing left determinant
-                    fprintf(stderr, "Mismatched determinant delimiters\n");
+                    *err_msg = "Missing Opening Determinant Delimiter\n";
                     return NULL;
                 }
                 break;
@@ -124,10 +151,16 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
     }
 
     while (op_top >= 0) {
-        if (op_stack[op_top]->type == TOKEN_LPAREN || op_stack[op_top]->type == TOKEN_RPAREN) {
-            fprintf(stderr, "Mismatched parentheses\n");
+        if(op_stack[op_top]->type == TOKEN_LPAREN || op_stack[op_top]->type == TOKEN_RPAREN) {
+            *err_msg = "Missing Closing Parentheses\n";
             return NULL;
         }
+
+        if(op_stack[op_top]->type == TOKEN_DET_L || op_stack[op_top]->type == TOKEN_DET_R) {
+            *err_msg = "Missing Closing Determinant Delimiter\n";
+            return NULL;
+        }
+
         output[output_pos++] = *op_stack[op_top--];
     }
 
@@ -139,126 +172,128 @@ Token* convert_rpn(Token* tokens, int num_tokens, int* out_rpn_len) {
 
 // Evaluate multiplication
 Operand handle_mult(Operand a, Operand b) {
-    if(a.matrix != NULL && b.matrix != NULL) { // Matrix multiplication
-        Matrix* result = matrix_mult(b.matrix, a.matrix);
-        return operand_create(result, 0);
-    } else if(a.matrix != NULL) { // Scalar multiplication
-        Matrix* result = matrix_scalar_mult(a.matrix, b.val);
-        return operand_create(result, 0);
-    } else if(b.matrix != NULL) { // Scalar multiplication
-        Matrix* result = matrix_scalar_mult(b.matrix, a.val);
-        return operand_create(result, 0);
+    if(a.type == MATRIX && b.type == MATRIX) { // Matrix multiplication
+        Matrix* result = matrix_mult(b.data.matrix, a.data.matrix);
+
+        if(result) // Return dot product
+            return operand_matrix(result);
+
+        return operand_error("Size Mismatch When Multiplying Matrices\n"); // Multiplication failed
+    } else if(a.type == MATRIX) { // Scalar multiplication
+        Matrix* result = matrix_scalar_mult(a.data.matrix, b.data.val);
+        return operand_matrix(result);
+    } else if(b.type == MATRIX) { // Scalar multiplication
+        Matrix* result = matrix_scalar_mult(b.data.matrix, a.data.val);
+        return operand_matrix(result);
     }
 
     // Numeric multiplication
-    return operand_create(NULL, a.val * b.val);
+    return operand_scalar(a.data.val * b.data.val);
 }
 
 
 // Evaluate addition
 Operand handle_add(Operand a, Operand b) {
-    if(a.matrix != NULL && b.matrix != NULL) { // Matrix addition
-        Matrix* result = matrix_add(a.matrix, b.matrix);
-        return operand_create(result, 0);
-    } else if(a.matrix != NULL) { // Scalar addition
-        Matrix* result = matrix_scalar_add(a.matrix, b.val);
-        return operand_create(result, 0);
-    } else if(b.matrix != NULL) { // Scalar addition
-        Matrix* result = matrix_scalar_add(b.matrix, a.val);
-        return operand_create(result, 0);
+    if(a.type == MATRIX && b.type == MATRIX) { // Matrix addition
+        Matrix* result = matrix_add(a.data.matrix, b.data.matrix);
+
+        if(result) // Return result matrix
+            return operand_matrix(result);
+        
+        return operand_error("Size Mismatch When Adding Matrices\n"); // Addition failed
+    } else if(a.type == MATRIX) { // Scalar addition
+        Matrix* result = matrix_scalar_add(a.data.matrix, b.data.val);
+        return operand_matrix(result);
+    } else if(b.type == MATRIX) { // Scalar addition
+        Matrix* result = matrix_scalar_add(b.data.matrix, a.data.val);
+        return operand_matrix(result);
     }
 
     // Numeric addition
-    return operand_create(NULL, a.val + b.val);
+    return operand_scalar(a.data.val + b.data.val);
 }
 
 
 // Evaluate subtraction
 Operand handle_sub(Operand a, Operand b) {
-    Matrix* result;
-    
-    if(a.matrix != NULL && b.matrix != NULL) // Matrix subtraction
-        result = matrix_sub(a.matrix, b.matrix);
-    else if(a.matrix != NULL) { // Scalar subtraction
-        result = matrix_scalar_add(a.matrix, b.val * -1);
-    } else { // Numeric subtraction
-        return operand_create(NULL, a.val - b.val);
+
+    if(a.type == MATRIX && b.type == MATRIX) { // Matrix subtraction
+        Matrix* result = matrix_sub(a.data.matrix, b.data.matrix);
+        
+        if(result) // Return matrix subtraction result
+            return operand_matrix(result);
+
+        return operand_error("Size Mismatch When Subtracting Matrices\n");  // Subtraction failed
+    } else if(a.type == MATRIX) { // Scalar subtraction
+        Matrix* result =  matrix_scalar_add(a.data.matrix, b.data.val * -1);
+        return operand_matrix(result);
     }
 
-    if(!result)
-        return operand_error();
-
-    return operand_create(result, 0);
+    // Numeric subtraction
+    return operand_scalar(a.data.val - b.data.val);
 }
 
 
 // Evaluate exponents
 Operand handle_exp(Operand a, Operand b) {
-    if(b.matrix) // Invalid, power is matrix
-        return operand_error();
-    if(a.matrix) { // Base is matrix
-        if(a.matrix->rows != a.matrix->cols)
-            return operand_error();
+    if(b.type == MATRIX) // Invalid, power is matrix
+        return operand_error("Matrix Cannot Be Exponent\n");
+    if(a.type == MATRIX) { // Base is matrix
+        if(a.data.matrix->rows != a.data.matrix->cols) // Matrix a must be square
+            return operand_error("Exponents can Only Apply to Square Matrices\n");
 
         // Check if exponent is integer
-        long long int_val = (long long)b.val;
-        if(b.val != (double)int_val) // Only matrix to the power of integers is supported
-            return operand_error();
+        long long int_val = (long long)b.data.val;
+        if(b.data.val != (double)int_val) // Only matrix to the power of integers is supported
+            return operand_error("Matrices Raised to Non-Integer Exponents is not Supported\n");
 
-        if(b.val == 0) // Return identity matrix if power is 0
-            return operand_create(matrix_identity(a.matrix->rows, a.matrix->cols), 0);
+        if(b.data.val == 0) // Return identity matrix if power is 0
+            return operand_matrix(matrix_identity(a.data.matrix->rows, a.data.matrix->cols));
 
-        if(b.val < 0) { // Find inverse of a to power of b
-            Matrix* result = matrix_inverse(a.matrix);
+        if(b.data.val < 0) { // Find inverse of a to power of b
+            Matrix* result = matrix_inverse(a.data.matrix);
 
             if(!result) // Matrix has no inverse
-                return operand_error();
+                return operand_error("Matrix has no Inverse, Thus cannot be Raised to Negative Exponent\n");
 
             Matrix* temp_inverse = matrix_scalar_add(result, 0);
             
-            for(int i = 1; i < b.val; i++) // Take inverse to power of b
+            for(int i = 1; i < b.data.val * -1; i++) // Take inverse of a to power of b
                 result = matrix_mult(result, temp_inverse);
 
-            matrix_free(temp_inverse);
+            matrix_free(temp_inverse); // Deallocate temp matrix
 
-            return operand_create(result, 0);
+            return operand_matrix(result);
         }
 
         // Raise matrix to positive integer power
-        Matrix* result = matrix_scalar_add(a.matrix, 0); // Matrix to store result
-        for(int i = 1; i < b.val; i++)
-            result = matrix_mult(result, a.matrix);
+        if(a.data.matrix->rows != a.data.matrix->cols) // Ensure matrix is square
+            return operand_error("Exponents can Only be Applied to Square Matrices\n");
+
+        Matrix* result = matrix_scalar_add(a.data.matrix, 0); // Matrix to store result
+
+        for(int i = 1; i < b.data.val; i++)
+            result = matrix_mult(result, a.data.matrix);
         
-        return operand_create(result, 0);
-    } else { // Both operands numeric
-        return operand_create(NULL, pow(a.val, b.val));
+        return operand_matrix(result);
     }
+
+    // Both operands are numeric
+    return operand_scalar(pow(a.data.val, b.data.val));
 }
 
 
 // Evaluate division
 Operand handle_div(Operand a, Operand b) {
-    if(b.matrix) { // Cannot divide by matrix
-        return operand_error();
-    } if(a.matrix) { // Divide matrix by scalar
-        Matrix* res = matrix_scalar_mult(a.matrix, 1 / b.val);
-        return operand_create(res, 0);
-    } else { // Numeric division
-        return operand_create(NULL, a.val / b.val);
+    if(b.type == MATRIX) { // Cannot divide by matrix
+        return operand_error("Matrix cannot be Divisor\n");
+    } if(a.type == MATRIX) { // Divide matrix by scalar
+        Matrix* res = matrix_scalar_mult(a.data.matrix, 1 / b.data.val);
+        return operand_matrix(res);
     }
 
-}
-
-Operand handle_numeric(char* op, Operand a, Operand b) {
-    if(a.matrix == NULL || b.matrix == NULL)
-        return operand_error();
-
-    if(!strcmp(op, "/"))
-        return operand_create(NULL, a.val / b.val);
-    if(!strcmp(op, "^"))
-        return operand_create(NULL, pow(a.val, b.val));
-
-    return operand_error();
+    // Numeric division
+    return operand_scalar(a.data.val / b.data.val);
 }
 
 
@@ -272,56 +307,52 @@ Operand apply_bin_op(char* op, Operand a, Operand b) {
         return handle_sub(b, a);
     if(!strcmp(op, "^")) // Exponents
         return handle_exp(b, a);
-    if(!strcmp(op, "/")) // Divison
+    if(!strcmp(op, "/")) // Division
         return handle_div(b, a);
     
-    return operand_error(); // Not recognized
+    return operand_error("Unrecognized Character\n"); // Not recognized
 }
 
 
 // Handle unary operators
 Operand apply_un_op(char* op, Operand a) {
     if(!strcmp(op, "-")) { // Handle unary negative
-        if(!a.matrix)
-            return operand_create(NULL, a.val * -1);
+        if(a.type != MATRIX)
+            return operand_scalar(a.data.val * -1);
 
-        Matrix* result = matrix_scalar_mult(a.matrix, -1);
-        return operand_create(result, 0);
+        Matrix* result = matrix_scalar_mult(a.data.matrix, -1);
+        return operand_matrix(result);
     } else if(!strcmp(op, "'")) { // Handle Transpose
-        if(!a.matrix) // Transpose of scalar is itself
-            return operand_create(NULL, a.val);
+        if(a.type != MATRIX) // Transpose of scalar is itself
+            return operand_scalar(a.data.val);
 
         // Calculate transpose
-        Matrix* result = matrix_transpose(a.matrix);
-        return operand_create(result, 0);
+        Matrix* result = matrix_transpose(a.data.matrix);
+        return operand_matrix(result);
     } else if(!strcmp(op, "det")) { // Handle determinant
-        #ifdef DBG
-        printf("Determ. recognized\n");
-        #endif
+        if(a.type != MATRIX) // Determinant is itself of 1 x 1 matrix (scalar)
+            return operand_scalar(a.data.val);
 
-        if(!a.matrix) // Cannot take determinant of scalar
-            return operand_error();
-
-        double result = matrix_determinant(a.matrix); // Calculate determinant
+        double result = matrix_determinant(a.data.matrix); // Calculate determinant
 
         #ifdef DBG
         printf("Determinant = %f\n", result);
         #endif
 
         if(result == -DBL_MAX) // Matrix has no determinant
-            return operand_error();
+            return operand_error("Determinant of Non-Square Matrices is Invalid");
         
-        return operand_create(NULL, result);
+        return operand_scalar(result);
     } else {
-        return operand_error();
+        return operand_error("Unrecognized Character");
     }
 }
 
 
 // Evaluate tokenized expression
-Matrix* eval_expr(Token* infix_expr, int infix_len) {
+Matrix* eval_expr(Token* infix_expr, char** err_msg, int infix_len) {
     int len; // Length of rpn expression
-    Token* expr = convert_rpn(infix_expr, infix_len, &len); // get rpn expression
+    Token* expr = convert_rpn(infix_expr, infix_len, &len, err_msg); // get rpn expression
 
     if(!expr) // Conversion to rpn failed
         return NULL;
@@ -333,6 +364,7 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
     for(int i = 0; i < len; i++) { // Iterate through tokens
 
         #ifdef DBG
+        /*
         printf("\nCurrent token (iteration %d): %d\t%s\n", i, expr[i].type, expr[i].symbol);
         printf("Operand stack:\n");
         for(int j = top; j >= 0; j--) {
@@ -341,28 +373,35 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
             else
                 printf("\nVal:\t%.2f\n", stack[j].val);
 
-        }
+        } */
         #endif
 
         if(expr[i].type == TOKEN_MATRIX) { // Add matrix to stack
             Matrix* matrix = rd_get_matrix(expr[i].symbol); // Get matrix
-            stack[++top] = operand_create(matrix, 0); // Add to stack
+            stack[++top] = operand_matrix(matrix); // Add to stack
         } else if(expr[i].type == TOKEN_NUMERIC) { // Add number to stack
-            stack[++top] = operand_create(NULL, expr[i].val); // Add number to stack
+            stack[++top] = operand_scalar(expr[i].val); // Add number to stack
         } else {
             if(expr[i].type == TOKEN_UN_OP) { // Apply unary operator
                 if(top < 0) { // Missing operand
-                    printf("Expression error, not enough operands\n");
+                    *err_msg = "Operators Missing Operands\n";
                     return NULL;
                 }
 
+                // Apply operator
                 Operand op = stack[top--]; // Get operand
-                Operand result = apply_un_op(expr[i].symbol, op);
-                if(result.err) return NULL; // Error occurred while applying operator
+                Operand result = apply_un_op(expr[i].symbol, op); // Apply operator
+
+                if(result.type == ERROR) { // Check if result is valid
+                    // Error occurred while applying operator
+                    *err_msg = result.data.err; 
+                    return NULL;
+                }
+
                 stack[++top] = result; // Push result
             } else if(expr[i].type == TOKEN_BIN_OP) { // Apply binary operator
                 if(top < 0) { // Missing operand
-                    printf("Expression error, not enough operands\n");
+                    *err_msg = "Operator Missing Operand\n";
                     return NULL;
                 }
 
@@ -370,28 +409,42 @@ Matrix* eval_expr(Token* infix_expr, int infix_len) {
                 Operand a = stack[top--];
                 Operand b = stack[top--];
 
-                Operand result = apply_bin_op(expr[i].symbol, a, b); // Get result
-                if(result.err) return NULL; // Error occurred while applying operator
+                // Apply operator
+                Operand result = apply_bin_op(expr[i].symbol, a, b);
+
+                if(result.type == ERROR) { // Check if result is valid
+                    // Error occurred while applying operator
+                    *err_msg = result.data.err;
+                    return NULL;
+                }
+
                 stack[++top] = result; // Push result
             } else { // Error, parentheses in RPN expression
-                printf("Expression error, mismatched parentheses\n");
+                *err_msg = "Missing Closing Parenthesis\n";
                 return NULL;
             }
         }
     }
 
     if(top != 0) { // Invalid expression, missing operators
-        printf("Expression error, not enough operators\n");
+        *err_msg = "Operator Missing Operands\n";
         return NULL;
     }
 
     Operand result = stack[top]; // Get result form top of stack 
     
-    if(result.matrix == NULL) { // Result is scalar
+    if(result.type == ERROR) { // Return error
+        *err_msg = result.data.err;
+        return NULL;
+    }
+
+    if(result.type == SCALAR) { // Result is scalar
+        // Return as 1 x 1 matrix
         Matrix* res_matrix = matrix_create(1, 1);
-        matrix_set(res_matrix, 0, 0, result.val);
+        matrix_set(res_matrix, 0, 0, result.data.val);
+
         return res_matrix;
     }
 
-    return result.matrix;
+    return result.data.matrix; // Result is matrix
 }

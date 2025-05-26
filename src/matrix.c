@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <math.h>
 #include "../include/matrix.h"
 #include "../include/map_iterator.h"
 
@@ -388,7 +389,7 @@ Matrix* matrix_inverse(Matrix* a) {
                 }
             }
 
-            if(swap_row == -1) { // Cannot comupute inverse if pivot is zero
+            if(swap_row == -1) { // Cannot compute inverse if pivot is zero
                 matrix_free(b);
                 matrix_free(inv);
                 return NULL;
