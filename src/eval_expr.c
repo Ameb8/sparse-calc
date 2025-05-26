@@ -20,16 +20,6 @@ Operand operand_create(Matrix* matrix, double val) {
     op.val = val;
     op.err = false;
 
-    #ifdef DEBUG
-    if(matrix != NULL) {
-        printf("\nOperand matrix field:\n");
-        matrix_print(op.matrix);
-        printf("Matrix argument:\n");
-        matrix_print(matrix);
-    }
-
-    #endif
-
     return op;
 }
 
@@ -201,19 +191,31 @@ Operand handle_exp(Operand a, Operand b) {
         if(b.val != (double)int_val) // Only matrix to the power of integers is supported
             return operand_error();
 
-        if(b.val < 0) // Matrices raised to negative power not supported
-            return operand_error();
-
         if(b.val == 0) // Return identity matrix if power is 0
             return operand_create(matrix_identity(a.matrix->rows, a.matrix->cols), 0);
 
+        if(b.val < 0) { // Find inverse of a to power of b
+            Matrix* result = matrix_inverse(a.matrix);
+
+            if(!result) // Matrix has no inverse
+                return operand_error();
+
+            Matrix* temp_inverse = matrix_scalar_add(result, 0);
+            
+            for(int i = 1; i < b.val; i++) // Take inverse to power of b
+                result = matrix_mult(result, temp_inverse);
+
+            matrix_free(temp_inverse);
+
+            return operand_create(result, 0);
+        }
+
         // Raise matrix to positive integer power
-        Matrix* res = matrix_scalar_add(a.matrix, 0); // Matrix to store result
-        for(int i = 1; i < b.val; i++) {
-            res = matrix_mult(res, a.matrix);
-        }       
+        Matrix* result = matrix_scalar_add(a.matrix, 0); // Matrix to store result
+        for(int i = 1; i < b.val; i++)
+            result = matrix_mult(result, a.matrix);
         
-        return operand_create(res, 0);
+        return operand_create(result, 0);
     } else { // Both operands numeric
         return operand_create(NULL, pow(a.val, b.val));
     }

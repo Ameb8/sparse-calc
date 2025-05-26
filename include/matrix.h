@@ -29,5 +29,6 @@ void matrix_free(Matrix* matrix);
 Matrix* scalar_subr(Matrix* matrix, double val);
 double matrix_determinant(Matrix* a);
 Matrix* matrix_identity(int rows, int cols);
+Matrix* matrix_inverse(Matrix* a);
 
 #endif

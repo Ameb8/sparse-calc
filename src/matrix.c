@@ -361,6 +361,74 @@ double matrix_determinant(Matrix* a) {
     return det;
 }
 
+Matrix* matrix_inverse(Matrix* a) {
+    int n = a->rows;
+
+    if(n != a->cols) // Must be square to compute inverse
+        return NULL;
+
+    double det = matrix_determinant(a);
+
+    if(det == 0) // Matrix is singular
+        return NULL;
+
+    Matrix* b = matrix_scalar_add(a, 0); // Copy matrix a into b
+    Matrix* inv = matrix_identity(n, n);
+
+    for(int i = 0; i < n; i++) {
+        // Pivot element
+        double pivot = matrix_get(b, i, i);
+        if(pivot == 0.0) {
+            // Try to swap with a lower row
+            int swap_row = -1;
+            for(int k = i + 1; k < n; k++) {
+                if(matrix_get(b, k, i) != 0.0) {
+                    swap_row = k;
+                    break;
+                }
+            }
+
+            if(swap_row == -1) { // Cannot comupute inverse if pivot is zero
+                matrix_free(b);
+                matrix_free(inv);
+                return NULL;
+            }
+
+            // Swap rows in both A and inv
+            for(int j = 0; j < n; j++) {
+                double tmp_a = matrix_get(b, i, j);
+                matrix_set(b, i, j, matrix_get(b, swap_row, j));
+                matrix_set(b, swap_row, j, tmp_a);
+
+                double tmp_inv = matrix_get(inv, i, j);
+                matrix_set(inv, i, j, matrix_get(inv, swap_row, j));
+                matrix_set(inv, swap_row, j, tmp_inv);
+            }
+
+            pivot = matrix_get(b, i, i);
+        }
+
+        // Normalize pivot row
+        for (int j = 0; j < n; j++) {
+            matrix_set(b, i, j, matrix_get(b, i, j) / pivot);
+            matrix_set(inv, i, j, matrix_get(inv, i, j) / pivot);
+        }
+
+        // Eliminate other rows
+        for (int k = 0; k < n; k++) {
+            if (k == i) continue;
+            double factor = matrix_get(b, k, i);
+            for (int j = 0; j < n; j++) {
+                matrix_set(b, k, j, matrix_get(b, k, j) - factor * matrix_get(b, i, j));
+                matrix_set(inv, k, j, matrix_get(inv, k, j) - factor * matrix_get(inv, i, j));
+            }
+        }
+    }
+
+    matrix_free(b);
+    return inv;
+}
+
 
 // Set value in matrix
 void matrix_set(Matrix* matrix, int row, int col, double val) {

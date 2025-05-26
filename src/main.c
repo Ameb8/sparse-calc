@@ -33,12 +33,24 @@ void run_app() {
     }
 }
 
+void test_inverse() {
+    Matrix* a = matrix_create(3, 3);
+    matrix_set(a, 0, 0, 2);
+    matrix_set(a, 1, 1, 3);
+    matrix_set(a, 1, 2, 2);
+    matrix_set(a, 2, 0, 1);
+    matrix_set(a, 2, 2, 4);
+    Matrix* inv = matrix_inverse(a);
+    matrix_print(inv);
+}
+
 
 int main() {
 #ifdef TEST
     run_tests();
 #else
-    run_app();
+    test_inverse();
+    //run_app();
 #endif
     return 0;
 }
