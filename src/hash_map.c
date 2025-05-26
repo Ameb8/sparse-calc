@@ -24,6 +24,8 @@ HashMap* map_create() {
     return map;
 }
 
+
+// Hash function for implementation
 unsigned int hash(int row, int col) {
     unsigned int hash = 17;
     hash = 31 * hash + row;
@@ -31,19 +33,21 @@ unsigned int hash(int row, int col) {
     return hash % HASH_MAP_SIZE;
 }
 
+
+// Add element to hashmap
 void map_set(HashMap* map, int row, int col, double val) {
     unsigned int index = hash(row, col); // Get hash of (row, col)
 
-    if(!map->table[index] && val != 0) { // Add used bucket to list if necessary
+    if(!map->table[index] && val != 0) { // Add new bucket to used_bucket list if necessary
         list_prepend(map->used_buckets, index, 0, 0);
         map->table[index] = list_create();
     }
 
-    List* list = map->table[index];
-    double cur_val = list_get_val(map->table[index], row, col);
+    List* list = map->table[index]; // Get reference to bucket's list
+    double cur_val = list_get_val(map->table[index], row, col); // Check if location already has entry
 
-    if(cur_val == 0) {
-        if(val != 0) {
+    if(cur_val == 0) { // New entry
+        if(val != 0) { // Add value to map
             list_prepend(list, row, col, val);
             map->size++;
         }
@@ -62,6 +66,8 @@ void map_set(HashMap* map, int row, int col, double val) {
         }
     }
 }
+
+
 
 void map_insert(HashMap* map, int row, int col, double val) {
     unsigned int index = hash(row, col); // Get hash of (row, col)
@@ -91,21 +97,24 @@ void map_insert(HashMap* map, int row, int col, double val) {
     }
 }
 
-double map_get(HashMap* map, int row, int col) {
-    unsigned int index = hash(row, col);
 
-    if (map->table[index] == NULL)
+// Get entry from hashmap
+double map_get(HashMap* map, int row, int col) {
+    unsigned int index = hash(row, col); // Get hash of new entry
+
+    if (map->table[index] == NULL) // Return 0 if bucket emtpy
         return 0;
 
-    return list_get_val(map->table[index], row, col);
+    return list_get_val(map->table[index], row, col); // Find value in bucket's list
 }
 
 
-void free_hash_map(HashMap* map) {
+// Deallocate used memory 
+void free_hash_map(HashMap* map) { 
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
-        list_free(map->table[i]);
+        list_free(map->table[i]); // Free each bucket
         
-    list_free(map->used_buckets);
-    free(map);
+    list_free(map->used_buckets); // Free used buckets
+    free(map); // Free map struct
 }
 

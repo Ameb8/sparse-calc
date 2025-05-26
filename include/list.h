@@ -22,7 +22,7 @@ void list_append(List* list, int row, int col, double val);
 void list_prepend(List* list, int row, int col, double val);
 double list_get_val(List* list, int row, int col);
 double list_increment_val(List* list, int row, int col, double val);
-double list_update_val(List* list, int row, int col, double val);
+void list_update_val(List* list, int row, int col, double val);
 double list_remove_val(List* list, int row, int col);
 void list_free(List* list);
 void list_print(List* list);

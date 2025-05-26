@@ -103,49 +103,6 @@ int count_columns(const char* filename) {
     fclose(file);
     return cols;
 }
-/*
-Matrix* import_csv(const char* filename) {
-    int rows = count_rows(filename);
-    int cols = count_columns(filename);
-    if(rows < 1 || cols < 1) 
-        return NULL;
-
-    FILE* file = fopen(filename, "r");
-    if(!file) {
-        printf("Error: %s failed to open\n", filename);
-        return NULL;
-    }
-
-    Matrix* matrix = matrix_create(rows, cols);
-
-    int row = 0, col = 0;
-    double val;
-    int c;
-
-    while(fscanf(file, "%lf", &val) == 1) {
-        if(val != 0.0) 
-            matrix_set(matrix, row, col, val);
-        
-        col++;
-        c = fgetc(file);
-        if(c == '\n' || c == '\r') {
-            row++;
-            col = 0;
-            if(c == '\r') {
-                int next = fgetc(file);
-                if (next != '\n' && next != EOF) ungetc(next, file);
-            }
-        } else if(c == EOF) {
-            break;
-        }
-    }
-
-    fclose(file);
-    return matrix;
-}
-*/
-
-
 
 
 Matrix* import_csv(const char* filename) {
