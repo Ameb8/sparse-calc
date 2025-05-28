@@ -192,6 +192,23 @@ Operand handle_mult(Operand a, Operand b) {
 }
 
 
+Operand handle_element_mult(Operand a, Operand b) {
+    if(a.type == SCALAR && b.type == SCALAR) // Scalar product
+        return operand_scalar(a.data.val * b.data.val);
+
+    if(a.type != MATRIX || b.type != MATRIX) // Check both operands are matrices
+        return operand_error("Element-Wise Multiplication '@' cannot be Applied to Matrix and Scalar\n");
+    
+    // Get result
+    Matrix* result = matrix_element_mult(a.data.matrix, b.data.matrix);
+    
+    if(!result) // Check if dimensions match
+        return operand_error("Matrix Dimensions Must Match to Perform Element-Wise Multiplication\n");
+
+    return operand_matrix(result);
+}
+
+
 // Evaluate addition
 Operand handle_add(Operand a, Operand b) {
     if(a.type == MATRIX && b.type == MATRIX) { // Matrix addition
@@ -227,6 +244,15 @@ Operand handle_sub(Operand a, Operand b) {
     } else if(a.type == MATRIX) { // Scalar subtraction
         Matrix* result =  matrix_scalar_add(a.data.matrix, b.data.val * -1);
         return operand_matrix(result);
+    } else if(b.type == MATRIX) { // Subtract each element in a from b
+        Matrix* result = matrix_scalar_subr(b.data.matrix, a.data.val);
+        
+        #ifdef DBG
+        printf("Subtract R result:\n");
+        matrix_print(result);
+        #endif
+
+        return operand_matrix(result);
     }
 
     // Numeric subtraction
@@ -243,12 +269,12 @@ Operand handle_exp(Operand a, Operand b) {
             return operand_error("Exponents can Only Apply to Square Matrices\n");
 
         // Check if exponent is integer
-        long long int_val = (long long)b.data.val;
+        long long int_val = (long long)b.data.val; // Get floor of exponent
         if(b.data.val != (double)int_val) // Only matrix to the power of integers is supported
             return operand_error("Matrices Raised to Non-Integer Exponents is not Supported\n");
 
         if(b.data.val == 0) // Return identity matrix if power is 0
-            return operand_matrix(matrix_identity(a.data.matrix->rows, a.data.matrix->cols));
+            return operand_matrix(matrix_identity(a.data.matrix->rows));
 
         if(b.data.val < 0) { // Find inverse of a to power of b
             Matrix* result = matrix_inverse(a.data.matrix);
@@ -278,16 +304,28 @@ Operand handle_exp(Operand a, Operand b) {
         return operand_matrix(result);
     }
 
-    // Both operands are numeric
+    // Check if exponeent produces imaginary or complex number
+    if(a.data.val < 0) { // Check if base is negative
+        long long int_val = (long long)b.data.val; // Get floor of exponent
+        if(b.data.val != (double)int_val) // Check if exponent is non-integer
+            return operand_error("Negative Number cannot be Raised to Non-Integer Power\n");
+
+    }
+
+    // Both operands are numeric and does not produce complex number
     return operand_scalar(pow(a.data.val, b.data.val));
 }
 
 
 // Evaluate division
 Operand handle_div(Operand a, Operand b) {
-    if(b.type == MATRIX) { // Cannot divide by matrix
+    if(b.type == MATRIX) // Cannot divide by matrix
         return operand_error("Matrix cannot be Divisor\n");
-    } if(a.type == MATRIX) { // Divide matrix by scalar
+
+    if(b.data.val == 0) // Check for division by zero
+        return operand_error("Cannot Divide by Zero\n");
+    
+    if(a.type == MATRIX) { // Divide matrix by scalar
         Matrix* res = matrix_scalar_mult(a.data.matrix, 1 / b.data.val);
         return operand_matrix(res);
     }
@@ -309,6 +347,9 @@ Operand apply_bin_op(char* op, Operand a, Operand b) {
         return handle_exp(b, a);
     if(!strcmp(op, "/")) // Division
         return handle_div(b, a);
+    if(!strcmp(op, "@")) // Element-wise multiplication
+        return handle_element_mult(a, b);
+
     
     return operand_error("Unrecognized Character\n"); // Not recognized
 }

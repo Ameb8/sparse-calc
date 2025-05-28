@@ -217,6 +217,13 @@ Token* parse_expr(char* expr, int* token_count, char** err_msg) {
                 token.val = 3;
                 i++;
                 break;
+            
+            case '@': // Element-wise multiplication
+                token.type = TOKEN_BIN_OP;
+                token.symbol = strdup("@");
+                token.val = 3;
+                i++;
+                break;
 
             case '(': // Opening parentheses
                 token.type = TOKEN_LPAREN;

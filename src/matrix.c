@@ -6,7 +6,6 @@
 #include "../include/matrix.h"
 #include "../include/map_iterator.h"
 
-#define MATRIX_REGISTRY "matrix_registry.dat"
 
 Matrix* matrix_create(int rows, int cols) {
     if(rows < 1 || cols < 1)
@@ -117,6 +116,30 @@ Matrix* matrix_scalar_add(Matrix* matrix, double scalar) {
 }
 
 
+Matrix* matrix_scalar_subr(Matrix* matrix, double scalar) {
+    if(!matrix) // Null input
+        return NULL;
+
+    // Create result matrix
+    Matrix* result = matrix_scalar_mult(matrix, -1);
+    result = matrix_scalar_add(result, scalar);
+    
+    /*result->scalar_val = scalar - matrix->scalar_val; // Update scalar offset
+
+    // Update stored values
+    MapIterator map_it = map_iterator_create(matrix->vals);
+
+    while(map_iterator_has_next(&map_it)) { // Iterate through operand stored vals
+        int row, col;
+        double val;
+        map_iterator_next(&map_it, &row, &col, &val);
+        matrix_set(result, row, col, val * -1);
+    }*/
+
+    return result;
+}
+
+
 Matrix* matrix_transpose(Matrix* matrix) {
     if(!matrix)
         return NULL;
@@ -137,6 +160,27 @@ Matrix* matrix_transpose(Matrix* matrix) {
     }
 
     result->scalar_val = matrix->scalar_val;
+
+    return result;
+}
+
+
+Matrix* matrix_element_mult(Matrix* a, Matrix* b) {
+    if(a->rows != b->rows || a->cols != b->cols)
+        return NULL; // Matrix dimensions must match
+    
+    Matrix* result = matrix_create(a->rows, a->cols); // Create matrix to store result
+    MapIterator map_it = map_iterator_create(a->vals); // Create iterator
+
+    while(map_iterator_has_next(&map_it)) { // Iterate through a's non-zero vals
+        // Get next non-zero val
+        int row, col;
+        double val;
+        map_iterator_next(&map_it, &row, &col, &val);
+
+        // Apply element product to result
+        matrix_set(result, row, col, val * matrix_get(b, row, col));
+    }
 
     return result;
 }
@@ -247,15 +291,15 @@ Matrix* matrix_mult(Matrix* a, Matrix* b) {
     return result;
 }
 
-Matrix* matrix_identity(int rows, int cols) {
-    Matrix* result = matrix_create(rows, cols);
-
-    // Ensure valid matrix dimensions
-    if(rows != cols || rows < 1 || cols < 1)
+Matrix* matrix_identity(int n) {
+    if(n < 1) // Ensure valid dimension
         return NULL;
 
+    Matrix* result = matrix_create(n, n);
+
+
     // Set diagonal vals to 1
-    for(int i = 0; i < rows; i++)
+    for(int i = 0; i < n; i++)
         matrix_set(result, i, i, 1.0);
     
     return result;
@@ -356,8 +400,8 @@ double matrix_determinant(Matrix* a) {
 
     // Cleanup
     free(p);
-    //matrix_destroy(l);
-    //matrix_destroy(u);
+    matrix_free(l);
+    matrix_free(u);
 
     return det;
 }
@@ -374,7 +418,7 @@ Matrix* matrix_inverse(Matrix* a) {
         return NULL;
 
     Matrix* b = matrix_scalar_add(a, 0); // Copy matrix a into b
-    Matrix* inv = matrix_identity(n, n);
+    Matrix* inv = matrix_identity(n);
 
     for(int i = 0; i < n; i++) {
         // Pivot element
@@ -446,6 +490,8 @@ double matrix_get(Matrix* matrix, int row, int col) {
     return map_get(matrix->vals, row, col) + matrix->scalar_val;
 }
 
+
+/*
 void matrix_print(Matrix* matrix) {
     if(!matrix) {
         printf("Matrix does not exist\n");
@@ -479,6 +525,60 @@ Matrix* matrix_copy(Matrix* matrix) {
     copy->scalar_val = matrix->scalar_val;
 
     return copy;
+}*/
+
+void matrix_print(Matrix* matrix) {
+    if (!matrix) {
+        printf("Matrix does not exist\n");
+        return;
+    }
+
+    int cols = matrix->cols;
+    int rows = matrix->rows;
+    double scalar = matrix->scalar_val;
+
+    // Step 1: Compute max width needed per column
+    int* col_widths = malloc(cols * sizeof(int));
+    char buffer[64];
+
+    for (int j = 0; j < cols; ++j) {
+        int max_width = 0;
+        for (int i = 0; i < rows; ++i) {
+            double val = map_get(matrix->vals, i, j) + scalar;
+            snprintf(buffer, sizeof(buffer), "%.2f", val);
+            int len = strlen(buffer);
+            if (len > max_width)
+                max_width = len;
+        }
+        col_widths[j] = max_width;
+    }
+
+    // Step 2: Print top border
+    for (int j = 0; j < cols; ++j) {
+        printf("+");
+        for (int k = 0; k < col_widths[j] + 2; ++k) // 2 for padding
+            printf("-");
+    }
+    printf("+\n");
+
+    // Step 3: Print matrix rows
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            double val = map_get(matrix->vals, i, j) + scalar;
+            printf("| %*.*f ", col_widths[j], 2, val);
+        }
+        printf("|\n");
+
+        // Print row separator
+        for (int j = 0; j < cols; ++j) {
+            printf("+");
+            for (int k = 0; k < col_widths[j] + 2; ++k)
+                printf("-");
+        }
+        printf("+\n");
+    }
+
+    free(col_widths);
 }
 
 

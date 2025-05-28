@@ -114,11 +114,6 @@ bool insert_matrix_vals(char* name, Matrix* matrix) {
         double val;
         map_iterator_next(&map_it, &row, &col, &val);
 
-        #ifdef DBG
-        printf("Values Inserted:\n");
-        printf("Row: %d, Col: %d, Value: %.2f\n", row, col, val);
-        #endif
-
         // Bind element to statement placeholder
         sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
         sqlite3_bind_int(stmt, 2, row);
@@ -153,13 +148,14 @@ bool repo_matrix_delete(char* name) {
 
     // Attempt to prepare statement
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
+    if(rc != SQLITE_OK) {
         fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
         return false;
     }
 
     sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
     bool success = exec_prepared_stmt(stmt);
+
     sqlite3_finalize(stmt);
 
     return success;

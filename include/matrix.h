@@ -21,6 +21,7 @@ Matrix* matrix_scalar_add(Matrix* matrix, double scalar);
 Matrix* matrix_scalar_subr(Matrix* matrix, double scalar);
 Matrix* matrix_transpose(Matrix* matrix);
 Matrix* matrix_mult(Matrix* a, Matrix* b);
+Matrix* matrix_element_mult(Matrix* a, Matrix* b);
 void matrix_set(Matrix* matrix, int row, int col, double val);
 double matrix_get(Matrix* matrix, int row, int col);
 void matrix_print(Matrix* matrix);
@@ -28,7 +29,7 @@ Matrix* matrix_copy(Matrix* matrix);
 void matrix_free(Matrix* matrix);
 Matrix* scalar_subr(Matrix* matrix, double val);
 double matrix_determinant(Matrix* a);
-Matrix* matrix_identity(int rows, int cols);
+Matrix* matrix_identity(int n);
 Matrix* matrix_inverse(Matrix* a);
 
 #endif

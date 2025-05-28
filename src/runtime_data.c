@@ -67,7 +67,8 @@ bool rd_delete_matrix(char* name) {
 
     matrix_free(matrices[matrix_index]);
     shift_vals(matrix_index);
-    
+    num_matrices--;
+ 
     return true;
 }
 

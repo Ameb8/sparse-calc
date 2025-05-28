@@ -76,21 +76,17 @@ bool create_matrix(char *name)
     return true;
 }
 
-bool set_matrix(char *input)
-{
+bool set_matrix(char *input) {
     int num_args = 0;
     char **args = get_args(input, &num_args);
 
-    if (!args || num_args == 0)
-    {
+    if (!args || num_args == 0) {
         printf("Error: No Matrix name provided\n");
         return false;
     }
 
-    for (int i = 0; i < num_args; i++)
-    {
-        if (!args[i])
-        {
+    for (int i = 0; i < num_args; i++) {
+        if (!args[i]) {
             printf("Error: Invalid argument %d\n", i);
             continue;
         }
@@ -100,12 +96,11 @@ bool set_matrix(char *input)
     return true;
 }
 
-bool show_matrix(char *input)
-{
+bool show_matrix(char *input) {
     int num_args = 0;
     char **args = get_args(input, &num_args);
 
-    if (!args || num_args == 0)
+    if(!args || num_args == 0)
     {
         printf("Error: No Matrix name provided\n");
         return false;
@@ -240,7 +235,7 @@ bool save_matrix(char *input)
     // Iterate through arguments
     for (int i = 0; i < num_args; i++)
     {
-        bool saved = save_matrix_repo(trim(args[0]), trim(args[0]));
+        bool saved = save_matrix_repo(trim(args[i]), trim(args[i]));
 
         if (saved)
             printf("Matrix %s saved\n", trim(args[i]));
